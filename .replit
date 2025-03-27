@@ -1,3 +1,20 @@
 run = "npm run dev"
+modules = ["nodejs-20"]
 [nix]
 channel = "stable-24_05"
+
+[workflows]
+runButton = "Dev"
+
+[[workflows.workflow]]
+name = "Dev"
+author = 11695787
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
