@@ -1,5 +1,5 @@
 run = "npm run dev"
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "python-3.11"]
 [nix]
 channel = "stable-24_05"
 
@@ -18,6 +18,10 @@ args = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd frontend && npm run dev"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 5173
