@@ -92,7 +92,7 @@ export default function App() {
           {images.map((img, index) => (
             <div key={index} className="relative aspect-square">
               <img
-                src={`http://localhost:5000/uploads/${img}`}
+                src={`/api/uploads/${img}`}
                 alt={`Upload ${index + 1}`}
                 className="object-cover rounded-lg"
               />
