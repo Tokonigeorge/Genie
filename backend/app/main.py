@@ -8,6 +8,10 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+@app.get("/")
+async def root():
+    return {"message": "API is running"}
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
