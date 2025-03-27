@@ -16,7 +16,7 @@ export default function App() {
     })
 
     try {
-      const response = await fetch('http://localhost:5000/upload-images/', {
+      const response = await fetch('/api/upload-images/', {
         method: 'POST',
         body: formData,
       })
@@ -29,7 +29,7 @@ export default function App() {
 
   const handleGenerate = async () => {
     try {
-      const response = await fetch('http://localhost:5000/generate/', {
+      const response = await fetch('/api/generate/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
