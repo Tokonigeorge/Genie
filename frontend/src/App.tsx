@@ -1,107 +1,147 @@
-import { useState } from "react";
-import { CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { useEffect, useRef, useState } from 'react';
+import ImageUploader, { ImageUploaderRef } from './components/ImageUploader';
+import ImageGallery from './components/ImageGallery';
+import BrandProfileGenerator from './components/BrandProfileGenerator';
 
 export default function App() {
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [images, setImages] = useState<string[]>([]);
-  const [prompt, setPrompt] = useState("");
+  const [brandProfile, setBrandProfile] = useState<any>(null);
+  const [generatedImagePath, setGeneratedImagePath] = useState<string | null>(
+    null
+  );
+  const [isUploading, setIsUploading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const imageUploaderRef = useRef<ImageUploaderRef>(null);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const handleImagesSelected = (files: FileList | null) => {
+    setSelectedFiles(files);
+  };
 
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const response = await fetch('/api/images/');
+        const data = await response.json();
+        if (data.images) {
+          setImages(data.images);
+        }
+      } catch (error) {
+        console.error('Error fetching images:', error);
+      }
+    };
+
+    fetchImages();
+  }, []);
+
+  const handleUploadImages = async () => {
+    if (!selectedFiles || selectedFiles.length === 0) return;
+
+    setIsUploading(true);
     const formData = new FormData();
-    Array.from(files).forEach((file) => {
-      formData.append("files", file);
+    Array.from(selectedFiles).forEach((file) => {
+      formData.append('files', file);
     });
 
     try {
-      const response = await fetch("/api/upload-images/", {
-        method: "POST",
+      const response = await fetch('/api/upload-images/', {
+        method: 'POST',
         body: formData,
       });
       const data = await response.json();
-      setImages(data.uploaded_files);
+      setImages((prevImages) => [...prevImages, ...data.uploaded_files]);
+      // Clear selected files after upload
+      setSelectedFiles(null);
+      imageUploaderRef.current?.resetFileInput();
     } catch (error) {
-      console.error("Error uploading images:", error);
+      console.error('Error uploading images:', error);
+    } finally {
+      setIsUploading(false);
     }
   };
+  console.log(images, 'images');
 
-  const handleGenerate = async () => {
+  const handleGenerateProfile = async (prompt: string) => {
+    if (images.length === 0) return;
+
+    setIsGenerating(true);
+
     try {
-      const response = await fetch("/api/generate/", {
-        method: "POST",
+      const response = await fetch('/api/generate-brand-profile/', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          images: images,
+          prompt: prompt,
+        }),
       });
       const data = await response.json();
-      console.log(data);
+      setBrandProfile(data.brandProfile);
+      console.log('Generated brand profile:', data.brandProfile);
+      if (data.generatedImagePath) {
+        setGeneratedImagePath(data.generatedImagePath);
+      }
     } catch (error) {
-      console.error("Error generating image:", error);
+      console.error('Error generating brand profile:', error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          AI Image Generator
+    <div className='min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-3xl mx-auto'>
+        <h1 className='text-3xl font-bold text-center mb-8'>
+          AI Brand Profile Generator
         </h1>
 
-        <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload Reference Images
-          </label>
-          <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex text-sm text-gray-600">
-                <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500">
-                  <span>Upload files</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={handleImageUpload}
-                  />
-                </label>
-              </div>
-              <p className="text-xs text-gray-500">
-                PNG, JPG, GIF up to 10 files
-              </p>
-            </div>
+        <ImageUploader
+          ref={imageUploaderRef}
+          onImagesSelected={handleImagesSelected}
+        />
+
+        {selectedFiles && selectedFiles.length > 0 && (
+          <div className='text-center mb-6'>
+            <p className='mb-2'>{selectedFiles.length} file(s) selected</p>
+            <button
+              onClick={handleUploadImages}
+              disabled={isUploading}
+              className='bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 disabled:bg-gray-400'
+            >
+              {isUploading ? 'Uploading...' : 'Upload Images'}
+            </button>
           </div>
-        </div>
+        )}
 
-        <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
-          <textarea
-            className="w-full p-2 border rounded-md"
-            rows={4}
-            placeholder="Enter your prompt here..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-          <button
-            onClick={handleGenerate}
-            className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
-          >
-            Generate
-          </button>
-        </div>
+        <ImageGallery images={images} />
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {images.map((img, index) => (
-            <div key={index} className="relative aspect-square">
+        <BrandProfileGenerator
+          images={images}
+          isGenerating={isGenerating}
+          onGenerateProfile={handleGenerateProfile}
+        />
+        {generatedImagePath && (
+          <div className='bg-white shadow sm:rounded-lg p-6 mb-6'>
+            <h2 className='text-lg font-medium mb-3'>Generated Image</h2>
+            <div className='flex justify-center'>
               <img
-                src={`/api/uploads/${img}`}
-                alt={`Upload ${index + 1}`}
-                className="object-cover rounded-lg"
+                src={generatedImagePath}
+                alt='Generated based on brand profile'
+                className='max-w-full h-auto rounded-lg shadow-md'
               />
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+        {brandProfile && (
+          <div className='bg-white shadow sm:rounded-lg p-6 mb-6'>
+            <h2 className='text-lg font-medium mb-3'>Brand Profile</h2>
+            <pre className='bg-gray-100 p-4 rounded-md overflow-auto'>
+              {JSON.stringify(brandProfile, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );
