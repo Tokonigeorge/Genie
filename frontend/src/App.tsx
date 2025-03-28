@@ -1,53 +1,54 @@
-
-import { useState } from 'react'
-import { CloudArrowUpIcon } from '@heroicons/react/24/outline'
+import { useState } from "react";
+import { CloudArrowUpIcon } from "@heroicons/react/24/outline";
 
 export default function App() {
-  const [images, setImages] = useState<string[]>([])
-  const [prompt, setPrompt] = useState('')
+  const [images, setImages] = useState<string[]>([]);
+  const [prompt, setPrompt] = useState("");
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
+    const files = e.target.files;
+    if (!files) return;
 
-    const formData = new FormData()
-    Array.from(files).forEach(file => {
-      formData.append('files', file)
-    })
+    const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
 
     try {
-      const response = await fetch('/api/upload-images/', {
-        method: 'POST',
+      const response = await fetch("/api/upload-images/", {
+        method: "POST",
         body: formData,
-      })
-      const data = await response.json()
-      setImages(data.uploaded_files)
+      });
+      const data = await response.json();
+      setImages(data.uploaded_files);
     } catch (error) {
-      console.error('Error uploading images:', error)
+      console.error("Error uploading images:", error);
     }
-  }
+  };
 
   const handleGenerate = async () => {
     try {
-      const response = await fetch('/api/generate/', {
-        method: 'POST',
+      const response = await fetch("/api/generate/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ prompt }),
-      })
-      const data = await response.json()
-      console.log(data)
+      });
+      const data = await response.json();
+      console.log(data);
     } catch (error) {
-      console.error('Error generating image:', error)
+      console.error("Error generating image:", error);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">AI Image Generator</h1>
-        
+        <h1 className="text-3xl font-bold text-center mb-8">
+          AI Image Generator
+        </h1>
+
         <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Upload Reference Images
@@ -67,7 +68,9 @@ export default function App() {
                   />
                 </label>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10 files</p>
+              <p className="text-xs text-gray-500">
+                PNG, JPG, GIF up to 10 files
+              </p>
             </div>
           </div>
         </div>
@@ -101,5 +104,5 @@ export default function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }
