@@ -3,15 +3,23 @@ import ImageUploader, { ImageUploaderRef } from './components/ImageUploader';
 import ImageGallery from './components/ImageGallery';
 import BrandProfileGenerator from './components/BrandProfileGenerator';
 
+interface BrandProfileData {
+  id: string;
+  prompt: string;
+  uploadedImages: string[];
+  brandProfile: any;
+  generatedImageId: string;
+}
+
 export default function App() {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [brandProfile, setBrandProfile] = useState<any>(null);
-  const [generatedImagePath, setGeneratedImagePath] = useState<string | null>(
-    null
-  );
+  const [generatedImageId, setGeneratedImageId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [prompt, setPrompt] = useState<string>('');
+  const [savedProfiles, setSavedProfiles] = useState<BrandProfileData[]>([]);
   const imageUploaderRef = useRef<ImageUploaderRef>(null);
 
   const handleImagesSelected = (files: FileList | null) => {
@@ -19,20 +27,34 @@ export default function App() {
   };
 
   useEffect(() => {
-    const fetchImages = async () => {
+    const fetchImagesAndProfiles = async () => {
       try {
         const response = await fetch('/api/images/');
         const data = await response.json();
         if (data.images) {
           setImages(data.images);
         }
+        if (data.profiles) {
+          setSavedProfiles(data.profiles);
+          // If there are profiles, set the latest one as the current one
+          if (data.profiles.length > 0) {
+            const latestProfile = data.profiles[data.profiles.length - 1];
+            setBrandProfile(latestProfile.brandProfile);
+            // setGeneratedImageId(latestProfile.generatedImageId);
+          }
+        }
       } catch (error) {
         console.error('Error fetching images:', error);
       }
     };
 
-    fetchImages();
+    fetchImagesAndProfiles();
   }, []);
+
+  console.log(savedProfiles, 'savedProfiles');
+  console.log(brandProfile, 'brandProfile');
+  console.log(images, 'images');
+  console.log(generatedImageId, 'generatedImageId');
 
   const handleUploadImages = async () => {
     if (!selectedFiles || selectedFiles.length === 0) return;
@@ -51,6 +73,9 @@ export default function App() {
       const data = await response.json();
       setImages((prevImages) => [...prevImages, ...data.uploaded_files]);
       // Clear selected files after upload
+      if (data.brandProfile) {
+        setBrandProfile(data.brandProfile);
+      }
       setSelectedFiles(null);
       imageUploaderRef.current?.resetFileInput();
     } catch (error) {
@@ -59,7 +84,6 @@ export default function App() {
       setIsUploading(false);
     }
   };
-  console.log(images, 'images');
 
   const handleGenerateProfile = async (prompt: string) => {
     if (images.length === 0) return;
@@ -80,8 +104,8 @@ export default function App() {
       const data = await response.json();
       setBrandProfile(data.brandProfile);
       console.log('Generated brand profile:', data.brandProfile);
-      if (data.generatedImagePath) {
-        setGeneratedImagePath(data.generatedImagePath);
+      if (data.generatedImageId) {
+        setGeneratedImageId(data.generatedImageId);
       }
     } catch (error) {
       console.error('Error generating brand profile:', error);
@@ -122,12 +146,12 @@ export default function App() {
           isGenerating={isGenerating}
           onGenerateProfile={handleGenerateProfile}
         />
-        {generatedImagePath && (
+        {generatedImageId && (
           <div className='bg-white shadow sm:rounded-lg p-6 mb-6'>
             <h2 className='text-lg font-medium mb-3'>Generated Image</h2>
             <div className='flex justify-center'>
               <img
-                src={generatedImagePath}
+                src={`/api/images/${generatedImageId}`}
                 alt='Generated based on brand profile'
                 className='max-w-full h-auto rounded-lg shadow-md'
               />

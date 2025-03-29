@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 import os
 
 from .models import BrandProfileRequest
-from .profile_service import create_brand_profile
+# from .profile_service import create_brand_profile
 
 router = APIRouter()
 
@@ -23,12 +23,13 @@ async def generate_brand_profile(request: BrandProfileRequest):
         raise HTTPException(status_code=400, detail="No images provided")
     
     try:
-        result = await create_brand_profile(
-            request.images, 
-            request.prompt, 
-            OPENAI_API_KEY, 
-            STABLE_DIFFUSION_API_KEY
-        )
+        # result = await create_brand_profile(
+        #     request.images, 
+        #     request.prompt, 
+        #     OPENAI_API_KEY, 
+        #     STABLE_DIFFUSION_API_KEY
+        # )
+        result = ''
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating brand profile: {str(e)}")
