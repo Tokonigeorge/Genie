@@ -34,13 +34,14 @@ export default function App() {
         if (data.images) {
           setImages(data.images);
         }
+        console.log(data, 'data');
         if (data.profiles) {
           setSavedProfiles(data.profiles);
           // If there are profiles, set the latest one as the current one
           if (data.profiles.length > 0) {
             const latestProfile = data.profiles[data.profiles.length - 1];
             setBrandProfile(latestProfile.brandProfile);
-            // setGeneratedImageId(latestProfile.generatedImageId);
+            setGeneratedImageId(latestProfile.generatedImageId);
           }
         }
       } catch (error) {
@@ -85,30 +86,49 @@ export default function App() {
     }
   };
 
-  const handleGenerateProfile = async (prompt: string) => {
-    if (images.length === 0) return;
+  const handleGenerateImage = async () => {
+    if (!brandProfile || !prompt) {
+      alert('Please ensure you have a brand profile and a prompt');
+      return;
+    }
 
     setIsGenerating(true);
 
     try {
-      const response = await fetch('/api/generate-brand-profile/', {
+      // Find the latest profile ID
+      const profileId =
+        savedProfiles.length > 0
+          ? savedProfiles[savedProfiles.length - 1].id
+          : null;
+
+      if (!profileId) {
+        alert('No profile ID found');
+        return;
+      }
+
+      const response = await fetch('/api/generate-image/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          images: images,
+          profile_id: profileId,
           prompt: prompt,
         }),
       });
-      const data = await response.json();
-      setBrandProfile(data.brandProfile);
-      console.log('Generated brand profile:', data.brandProfile);
-      if (data.generatedImageId) {
-        setGeneratedImageId(data.generatedImageId);
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
       }
+
+      const data = await response.json();
+      setGeneratedImageId(data.generatedImageId);
+
+      // Update the prompt in case it's different from what was set
+      setPrompt(data.prompt);
     } catch (error) {
-      console.error('Error generating brand profile:', error);
+      console.error('Error generating image:', error);
+      alert('Failed to generate image. See console for details.');
     } finally {
       setIsGenerating(false);
     }
@@ -144,14 +164,19 @@ export default function App() {
         <BrandProfileGenerator
           images={images}
           isGenerating={isGenerating}
-          onGenerateProfile={handleGenerateProfile}
+          prompt={prompt}
+          setPrompt={setPrompt}
+          onGenerateProfile={handleGenerateImage}
         />
         {generatedImageId && (
           <div className='bg-white shadow sm:rounded-lg p-6 mb-6'>
             <h2 className='text-lg font-medium mb-3'>Generated Image</h2>
+            <p className='text-sm text-gray-500 mb-3'>
+              Generation of "{prompt}" with Stable Diffusion
+            </p>
             <div className='flex justify-center'>
               <img
-                src={`/api/images/${generatedImageId}`}
+                src={`/api/image/${generatedImageId}`}
                 alt='Generated based on brand profile'
                 className='max-w-full h-auto rounded-lg shadow-md'
               />

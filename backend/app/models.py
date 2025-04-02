@@ -48,6 +48,7 @@ class ProfileBase(BaseModel):
 
 class GenerateRequest(BaseModel):
     prompt: str
+    profile_id: str
 
 class BrandProfileRequest(BaseModel):
     images: List[str]

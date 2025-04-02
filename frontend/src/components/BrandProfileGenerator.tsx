@@ -1,21 +1,21 @@
-import { useState } from 'react';
-
 interface BrandProfileGeneratorProps {
   images: string[];
-  onGenerateProfile: (prompt: string) => Promise<void>;
+  onGenerateProfile: () => Promise<void>;
   isGenerating: boolean;
+  prompt: string;
+  setPrompt: (prompt: string) => void;
 }
 
 export default function BrandProfileGenerator({
   images,
   onGenerateProfile,
   isGenerating,
+  prompt,
+  setPrompt,
 }: BrandProfileGeneratorProps) {
-  const [prompt, setPrompt] = useState('');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerateProfile(prompt);
+    onGenerateProfile();
   };
 
   if (images.length === 0) return null;

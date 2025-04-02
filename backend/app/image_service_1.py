@@ -10,18 +10,12 @@ from .database import  db
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 import json
 import base64
-import os
 from openai import OpenAI
 from .database import profiles_collection
 from google import genai
 from google.genai import types
-from google.genai.types import HttpOptions, Part
-from .extract_colors import extract_dominant_colors
-
 # Initialize GridFS for file storage
 fs = AsyncIOMotorGridFSBucket(db)
-
-os.environ["GOOGLE_GENAI_USE_VERTEX_AI"] = "True"
 
 
 
@@ -47,79 +41,71 @@ async def get_all_images():
         image_ids.append(str(grid_out._id))
     return image_ids
 
-async def create_brand_profile_gemini_flash(images, gemini_api_key):
-    """Create a brand profile using Gemini 2.0 Flash model"""
-    # Initialize Gemini client
-    client = genai.Client(
-        api_key=gemini_api_key,
-        http_options=HttpOptions(api_version="v1")
-    )
+async def create_brand_profile(images, openai_key):
+    """Create a brand profile using OpenAI API and generate an image"""
+    client = OpenAI(api_key=openai_key)
     
-    contents = ["Analyze these images and provide a JSON brand illustration profile."]
-    all_extracted_colors = []
-
-    # Add each image to the contents
+    # Prepare images for GPT (convert to base64)
+    image_contents = []
     for image_id in images:
-        # Get image data from GridFS
+        # Get image from GridFS
         image_data = await get_image_by_id(image_id)
-
-        extracted_colors = await extract_dominant_colors(image_data)
-        all_extracted_colors.extend(extracted_colors)
-        print(f'extracted_colors: {extracted_colors}')
-        
-        # Add image data as a Part object
-        contents.append(
-            Part.from_bytes(data=image_data, mime_type="image/jpeg")
-        )
-
-     # Make sure only unique colors are considered
-    all_extracted_colors = list(set(all_extracted_colors))
-
-       # Create the prompt that will analyze the images
+        encoded_image = base64.b64encode(image_data).decode('utf-8')
+        image_contents.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/jpeg;base64,{encoded_image}"
+            }
+        })
+        # - If the characters are wearing accessories, mention the accessory style and color.
+    # - If the characters are wearing shoes, mention the shoe style and color.
+    # - If the characters are wearing hats, mention the hat style and color.
+    # - If the characters are wearing glasses, mention the glasses style and color.
+    # - If the characters are wearing masks, mention the mask style and color.
+    # - If the characters are wearing jewelry, mention the jewelry style and color.
+    # Craft the system prompt
     system_prompt = """
     You are a design expert specialized in analyzing visual styles and creating brand profiles.
-    Analyze the provided images and create a detailed JSON illustration profile that captures the visual style.
+    Analyze the provided images and create a detailed JSON brand profile that captures the visual style.
     The profile should contain any information that gives immediate context to any AI system to replicate similar illustrations in the future in a consistent style.
     Do not hallucinate or include any information that is not present in the images. If you're unsure about something, do not include it.
-    Use the following extracted HEX color codes to ensure accuracy:
-    {all_extracted_colors}
-    Do not infer new colors; use only the extracted ones
     Your analysis should include:
     - Overall style description and vibe
-    - Color usage: dominant tones, gradients, palettes or patterns, you can use the extracted colors.
+    - Color usage: dominant tones. gradients, palletes or patterns
     - Texture
     - Brush strokes style
     - Composition and placement of elements
-    - Background elements and style
+    - Background elements and style.
     - Character design elements and style
-    - Visual tone and mood
+    - Visual tone and mood.
     - General style and tags of the illustration
-    - Fill style, if anythings is filled mention it.
     - Line style
     - Shape style
     - Pattern style and color
     - Style name
     - Style description
-    - Recommendations for maintaining style consistency
-
+    - Recommendations for maintaining style consistency -> if the characters are wearing patterned clothes, mention the pattern style and color. If the characters are wearing solid clothes, mention the solid color....
+ 
     Return ONLY valid JSON without markdown formatting.
     """
     
-    # prompt_text = f"{system_prompt}\nAnalyze these images and provide a JSON illustration profile:"
-    
-    # # Prepare the content array with the prompt text and images
-    # contents = [prompt_text]
-    contents.insert(0, system_prompt)
+    # Create the messages payload for GPT
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": [
+            {"type": "text", "text": "You are an art style analysis expert"},
+            *image_contents
+        ]}
+    ]
     
     try:
-        # Send the request to Gemini
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-001",
-            contents=contents
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=1500
         )
         
-        # Extract the response text
-        assistant_message = response.text
+        assistant_message = response.choices[0].message.content
         
         # Clean up any non-JSON content and parse
         try:
@@ -132,10 +118,19 @@ async def create_brand_profile_gemini_flash(images, gemini_api_key):
             else:
                 brand_profile = json.loads(assistant_message)
             
+            # Generate an image based on the brand profile and prompt
+            # generated_image_id = await generate_image_from_profile(
+            #     brand_profile, 
+            #     prompt, 
+            #     stable_diffusion_key
+            # )
+            
             # Save profile to MongoDB
             profile_data = {
+                # "prompt": prompt,
                 "uploaded_images": images,
                 "json_profile": brand_profile,
+                # "generated_image": generated_image_id
             }
             
             result = await profiles_collection.insert_one(profile_data)
@@ -143,6 +138,7 @@ async def create_brand_profile_gemini_flash(images, gemini_api_key):
             return {
                 "id": str(result.inserted_id),
                 "brandProfile": brand_profile,
+                # "generatedImageId": generated_image_id
             }
         except json.JSONDecodeError:
             # If JSON parsing fails, return the raw text
@@ -153,105 +149,10 @@ async def create_brand_profile_gemini_flash(images, gemini_api_key):
                 }
             }
     except Exception as e:
-        print(f"Error creating brand profile with Gemini Flash: {str(e)}")
+        print(f"Error creating brand profile: {str(e)}")
         raise
 
-async def create_brand_profile_gemini_vision(images, gemini_api_key):
-    """Create a brand profile using Gemini 1.0 Pro Vision model"""
-    # Initialize Gemini client
-    client = genai.Client(
-        api_key=gemini_api_key,
-        http_options=HttpOptions(api_version="v1")
-    )
-    
-    # Create the prompt that will analyze the images
-    system_prompt = """
-    You are a design expert specialized in analyzing visual styles and creating brand profiles.
-    Analyze the provided images and create a detailed JSON illustration profile that captures the visual style.
-    The profile should contain any information that gives immediate context to any AI system to replicate similar illustrations in the future in a consistent style.
-    Do not hallucinate or include any information that is not present in the images. Extract the **EXACT** style details from the provided images.  If you're unsure about something, do not include it.
-    Your analysis should include:
-    - Overall style description and vibe
-    - Color usage and pallette: dominant tones, gradients, palettes or patterns, add hex codes where neccesary.
-    - Texture: A precise description of the texture elements in the images if applicable.
-    - Brush strokes style: A precise description of the brush stroke technique in the images if applicable.
-    - Composition and placement of elements: A precise description of the composition and placement of the elements in the images. Grid alignment, focal points, symettry...
-    - Background elements and style: A precise description of the background elements and style in the images.
-    - Character design elements and style: A precise description of the character design elements and style in the images.
-    - Visual tone and mood: A precise description of the visual tone and mood in the images.
-    - General style and tags of the illustration: A precise description of the general style and tags of the illustration.
-    - Fill style, if anythings is filled mention it. Solid fills, gradient fills, transparency, pattern fills, etc.
-    - Line style: A precise description of the line style in the images if applicable. Details about stroke thickness, curvature, and opacity.
-    - Shape style: A precise description of the shape style in the images if applicable.
-    - Pattern style and color: A precise description of the pattern style and color in the images if applicable. Any repeating elements or themes.
-    - Style name and tags: A precise description of the style name and tags of the illustration.
-    - Style description: A precise description of the style description of the illustration.
-    - Recommendations for maintaining style consistency: A precise description of the recommendations for maintaining style consistency.
-
-    Return ONLY valid JSON without markdown formatting.
-    """
-    
-    prompt_text = f"{system_prompt}\nAnalyze these images and provide a JSON illustration profile:"
-    
-    # Prepare the content array with the prompt text and images
-    contents = [prompt_text]
-    
-    # Add each image to the contents
-    for image_id in images:
-        # Get image data from GridFS
-        image_data = await get_image_by_id(image_id)
-        
-        # Add image data as a Part object
-        contents.append(
-            Part.from_bytes(data=image_data, mime_type="image/jpeg")
-        )
-    
-    try:
-        # Send the request to Gemini
-        response = client.models.generate_content(
-            model="gemini-1.0-pro-vision",
-            contents=contents
-        )
-        
-        # Extract the response text
-        assistant_message = response.text
-        
-        # Clean up any non-JSON content and parse
-        try:
-            # Try to extract just the JSON if there's any surrounding text
-            json_start = assistant_message.find("{")
-            json_end = assistant_message.rfind("}") + 1
-            if json_start >= 0 and json_end > json_start:
-                json_str = assistant_message[json_start:json_end]
-                brand_profile = json.loads(json_str)
-            else:
-                brand_profile = json.loads(assistant_message)
-            
-            # Save profile to MongoDB
-            profile_data = {
-                "uploaded_images": images,
-                "json_profile": brand_profile,
-            }
-            
-            result = await profiles_collection.insert_one(profile_data)
-            
-            return {
-                "id": str(result.inserted_id),
-                "brandProfile": brand_profile,
-            }
-        except json.JSONDecodeError:
-            # If JSON parsing fails, return the raw text
-            return {
-                "brandProfile": {
-                    "error": "Failed to parse JSON response",
-                    "rawResponse": assistant_message
-                }
-            }
-    except Exception as e:
-        print(f"Error creating brand profile with Gemini Vision: {str(e)}")
-        raise
-
-async def save_uploaded_images(files, gemini_api_key=None):
+async def save_uploaded_images(files, openai_key=None, stable_diffusion_key=None):
     """Save uploaded images to MongoDB GridFS and return their IDs"""
     file_ids = []
     for file in files:
@@ -263,9 +164,9 @@ async def save_uploaded_images(files, gemini_api_key=None):
         )
         file_ids.append(str(file_id))
     brand_profile_data = None
-    if gemini_api_key and file_ids:
+    if openai_key and stable_diffusion_key and file_ids:
         
-        brand_profile_data = await create_brand_profile_gemini_flash(file_ids, gemini_api_key)
+        brand_profile_data = await create_brand_profile(file_ids, openai_key)
     
     return file_ids, brand_profile_data
 
@@ -288,12 +189,10 @@ async def generate_image_from_profile(brand_profile, prompt, api_key, profile_id
 
         # Create a streamlined prompt that includes the JSON profile
         detailed_prompt = (
-              f"Use the reference images to **exactly** replicate the style, colors, and composition with this prompt: {prompt}. \n\n "
-               f"Do not deviate. Follow the provided brand profile strictly: {brand_profile_str}. "
-          f"Base the new image precisely on this profile and the reference images."
-
-   
-
+            f"{prompt}.\n\n"
+            f"Use the following brand profile to match the style exactly:\n"
+            f"{brand_profile_str}\n\n"
+            f"Create an image that follows this style profile precisely."
         )
         
         
@@ -389,3 +288,130 @@ async def generate_image_from_profile(brand_profile, prompt, api_key, profile_id
     except Exception as e:
         print(f"Error generating image with Google Gemini: {str(e)}")
         return None
+
+# async def generate_image_from_profile(brand_profile, prompt, api_key, profile_id=None):
+#     """Generate an image based on the brand profile and prompt using Stable Diffusion API."""
+#     try:
+#         reference_images = []
+#         if profile_id:
+#             profile = await profiles_collection.find_one({"_id": ObjectId(profile_id)})
+#             if profile and "uploaded_images" in profile:
+#                 # Get up to 2 reference images from the profile
+#                 reference_image_ids = profile["uploaded_images"][:2]
+#                 for img_id in reference_image_ids:
+                   
+#                         image_data = await get_image_by_id(img_id)
+#                         # Convert to base64 for the API
+#                         # encoded_image = base64.b64encode(image_data).decode('utf-8')
+#                         reference_images.append(image_data)
+    
+#         # Create a prompt that incorporates the brand profile info
+#         style_name = brand_profile.get("style_name", "")
+#         style_description = brand_profile.get("overall_style_description", "")
+#         overall_style_description = brand_profile.get("overall_style_description", "")
+#         color_palette = brand_profile.get("color_palette", {})
+#         primary_colors = ""
+#         if "primary_colors" in color_palette:
+#             # Try both "hex_code" and "color" fields for compatibility
+#             primary_colors = ", ".join([color.get("hex_code", color.get("color", "")) 
+#                                       for color in color_palette.get("primary_colors", [])])
+        
+#         accent_colors = ""
+#         if "accent_colors" in color_palette:
+#             accent_colors = ", ".join([color.get("hex_code", color.get("color", "")) 
+#                                       for color in color_palette.get("accent_colors", [])])
+#         texture = brand_profile.get("texture", "")
+#         brush_strokes = brand_profile.get("brush_strokes_style", "")
+#         composition = brand_profile.get("composition", "")
+#         line_style = brand_profile.get("line_style", "")
+#         shape_style = brand_profile.get("shape_style", "")
+#         pattern_info = ""
+#         pattern_data = brand_profile.get("pattern_style_and_color", [])
+#         if pattern_data:
+#             patterns = []
+#             for pattern in pattern_data:
+#                 pattern_name = pattern.get("pattern", "")
+#                 pattern_colors = ", ".join([f"{c.get('color', '')} ({c.get('description', '')})" 
+#                                          for c in pattern.get("colors", [])])
+#                 patterns.append(f"{pattern_name}: {pattern_colors}")
+#             pattern_info = "; ".join(patterns)
+#         recommendations = " ".join(brand_profile.get("recommendations_for_maintaining_style_consistency", []))
+        
+#         # Craft a detailed prompt for the image generation
+#         detailed_prompt = (
+#     f"{prompt}. with the following information: "
+#     f"Style name: {style_name}. "
+#     f"Style: {style_description}. "
+#     f"Overall style: {overall_style_description}. "
+#     f"Color palette: Primary colors - {primary_colors}, Accent colors - {accent_colors}. "
+#     f"Texture: {texture}. "
+#     f"Brush strokes: {brush_strokes}. "
+#     f"Composition: {composition}. "
+#     f"Line style: {line_style}. "
+#     f"Shape style: {shape_style}. "
+#     f"Pattern details: {pattern_info}. "
+#     f"Ensure consistency by following these guidelines: {recommendations}."
+# )
+
+#         api_host = 'https://api.stability.ai'
+
+      
+#         api_endpoint = f"{api_host}/v2beta/stable-image/generate/sd3"
+
+        
+#         headers = {
+#             "Authorization": f"Bearer {api_key}",
+#                "Accept": "application/json",
+#         }
+
+#         form_data = aiohttp.FormData()
+        
+#         # Add prompt in the correct format
+#         form_data.add_field("prompt", detailed_prompt)  # JSON encoded
+
+#         # Add other parameters
+#         form_data.add_field("cfg_scale", "7")  # Only if supported
+#         # form_data.add_field("seed", "0")  # Set a seed if needed
+#         form_data.add_field("output_format", "png") 
+
+#         if reference_images:
+#             form_data.add_field("mode", "image-to-image")
+#             form_data.add_field("strength", "0.8")  # Influence of the reference image
+#             # form_data.add_field("style_reference_strength", "0.5")
+#             form_data.add_field(
+#         "image",
+#         reference_images[0],  # Only send one reference image
+#         filename="reference.png",
+#         content_type="image/png"
+#     )
+
+#         async with aiohttp.ClientSession() as session:
+#             async with session.post(api_endpoint, headers=headers, data=form_data) as response:
+#                 if response.status != 200:
+#                     error_text = await response.text()
+#                     print(f"Stable Diffusion API error: {error_text}")
+#                     return None
+                
+#                 response_data = await response.json()
+
+
+#                 image_data = response_data.get("image")  # Adjust key based on actual response
+#                 if image_data:
+#                     image_bytes = base64.b64decode(image_data)
+                    
+#                     # Save the image to GridFS
+#                     filename = f"generated_{int(time.time())}.png"
+#                     file_id = await fs.upload_from_stream(
+#                         filename,
+#                         image_bytes,
+#                         metadata={"content_type": "image/png", "generated": True}
+#                     )
+                    
+#                     return str(file_id)
+#                 else:
+#                     print("No image data was returned in the response")
+#                     return None
+
+#     except Exception as e:
+#         print(f"Error generating image with Stable Diffusion: {str(e)}")
+#         return None
