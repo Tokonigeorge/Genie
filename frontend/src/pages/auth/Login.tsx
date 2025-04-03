@@ -6,17 +6,24 @@ import Logo from '../../components/commons/Logo';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(true);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple validation
+
     if (email.trim() === '') return;
 
-    // Perform login
     login();
-    navigate('/');
+
+    if (isFirstTimeUser) {
+      navigate('/email-sent');
+    } else {
+      navigate('/onboarding');
+    }
   };
 
   return (
@@ -64,7 +71,7 @@ const Login: React.FC = () => {
 
               <button
                 type='submit'
-                className='w-full bg-[#292929] text-white p-4 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
+                className='w-full cursor-pointer bg-[#292929] text-white p-4 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
               >
                 Create an Account
               </button>
@@ -90,7 +97,7 @@ const Login: React.FC = () => {
             </div>
 
             {/* Google login */}
-            <button className='w-full flex items-center text-[#333333] text-base justify-center p-3 border border-[#8080801F] rounded-[90px] font-geist'>
+            <button className='w-full cursor-pointer flex items-center text-[#333333] text-base justify-center p-3 border border-[#8080801F] rounded-[90px] font-geist'>
               <svg
                 width='18'
                 height='18'

@@ -1,45 +1,49 @@
+// ... existing code ...
 import React from 'react';
 import { Link } from 'react-router-dom';
+import Logo from '../../components/commons/Logo';
+import Footer from '../../components/layouts/Footer';
 
 const EmailSent: React.FC = () => {
   return (
-    <div className='flex min-h-screen'>
-      <div className='w-full md:w-1/2 flex items-center justify-center p-8'>
+    <div className='flex min-h-screen w-full flex-col p-10'>
+      <div className='mb-8 flex '>
+        <Logo />
+      </div>
+
+      <div className='flex-grow flex items-center justify-center'>
         <div className='w-full max-w-md text-center'>
-          {/* Logo */}
-          <div className='flex justify-center mb-10'>
-            <svg
-              width='24'
-              height='24'
-              viewBox='0 0 24 24'
-              fill='none'
-              xmlns='http://www.w3.org/2000/svg'
-            >
-              <circle cx='12' cy='12' r='12' fill='#000' />
-              <text x='12' y='16' fontSize='14' fill='#fff' textAnchor='middle'>
-                G
-              </text>
-            </svg>
+          {/* Responsive image */}
+          <div className='mb-8 flex justify-center'>
+            <img
+              src='../../assets/email-sent.png'
+              alt='Email Sent'
+              className='w-3/4 max-w-xs'
+            />
           </div>
 
-          {/* Heading */}
-          <h1 className='text-3xl font-bold mb-4'>Check your email</h1>
-          <p className='text-gray-600 mb-8'>
-            We've sent a password reset link to your email address. Please check
-            your inbox and follow the instructions.
+          <h1 className='text-[40px] text-[#333333] font-medium mb-4'>
+            You&apos;re almost in!
+          </h1>
+
+          <p className='text-[16px] text-[#777777] font-geist mb-8 leading-[24px]'>
+            We've sent a magic link to david@geniestudio.ai. Open your email and
+            tap the link to log in.
           </p>
 
-          {/* Back to login */}
-          <div>
-            <Link to='/login' className='text-blue-600 hover:underline'>
-              Back to Login
-            </Link>
-          </div>
+          <Link
+            to='/login'
+            className='inline-block cursor-pointer bg-[#292929] text-white px-18 py-3.5 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
+          >
+            Back to Login
+          </Link>
         </div>
       </div>
-      <div className='hidden md:block md:w-1/2 bg-gray-100'></div>
+
+      <div className='mt-auto'>
+        <Footer elements={['Genie Labs. 2025', 'Privacy Policy']} />
+      </div>
     </div>
   );
 };
-
 export default EmailSent;
