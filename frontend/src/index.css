@@ -1,4 +1,56 @@
-@import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* @import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities'; */
+
+@font-face {
+  font-family: 'Aeonik';
+  src: url('./assets/fonts/New Aeonik Trials/Aeonik-Regular.otf')
+    format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Aeonik';
+  src: url('./assets/fonts/New Aeonik Trials/Aeonik-RegularItalic.otf')
+    format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Aeonik';
+  src: url('./assets/fonts/New Aeonik Trials/Aeonik-Medium.otf')
+    format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Aeonik';
+  src: url('./assets/fonts/New Aeonik Trials/Aeonik-Bold.otf')
+    format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  /* Colors */
+  --color-secondary: #777777;
+  --color-label: #949494;
+  --color-field-border: #f5f5f5;
+  --color-button-primary: #292929;
+
+  /* Other variables */
+  --shadow-button: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  font-family: 'Aeonik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
