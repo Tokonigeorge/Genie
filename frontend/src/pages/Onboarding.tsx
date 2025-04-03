@@ -1,42 +1,86 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import Logo from '../components/commons/Logo';
+import Footer from '../components/layouts/Footer';
+import Step1 from '../components/onboarding/Step1';
+import Step2 from '../components/onboarding/Step2';
+import Step3 from '../components/onboarding/Step3';
+import Step4 from '../components/onboarding/step4';
 const Onboarding: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
 
-  const handleComplete = () => {
-    navigate('/');
+  const handleNext = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <Step1 onNext={handleNext} />;
+      case 2:
+        return <Step2 onNext={handleNext} onPrevious={handlePrevious} />;
+      case 3:
+        return (
+          <Step3 onComplete={() => navigate('/')} onPrevious={handlePrevious} />
+        );
+      case 4:
+        return (
+          <Step4 onComplete={() => navigate('/')} onPrevious={handlePrevious} />
+        );
+      default:
+        return <Step1 onNext={handleNext} />;
+    }
   };
 
   return (
-    <div className='p-8 max-w-2xl mx-auto'>
-      <h1 className='text-2xl font-bold mb-4'>Welcome to Genie</h1>
-      <p className='mb-6'>Complete your onboarding to get started</p>
+    <div className='flex min-h-screen flex-col p-10'>
+      {/* Logo at the top */}
+      <div className='mb-8'>
+        <Logo />
+      </div>
 
-      {/* Simplified onboarding steps */}
-      <div className='space-y-6 mb-8'>
-        <div className='p-4 border rounded'>
-          <h2 className='font-bold'>Step 1: Personalize your experience</h2>
-          <p className='text-gray-600'>Tell us about your preferences</p>
-        </div>
+      {/* Main content container */}
+      <div className='flex-grow flex items-center justify-center'>
+        <div className='w-[70%] flex rounded-3xl overflow-hidden'>
+          {/* Left side with form */}
+          <div className='w-1/2 p-8 bg-white'>
+            <div className='mb-6'>
+              <p className='text-sm font-medium text-[#949494]'>
+                STEP {currentStep}/04
+              </p>
+              <h1 className='text-3xl font-medium mt-2'>
+                {currentStep === 1
+                  ? 'Welcome to Genie'
+                  : currentStep === 2
+                  ? 'Tell us about yourself'
+                  : currentStep === 3
+                  ? 'Set your preferences'
+                  : 'Complete your setup'}
+              </h1>
+            </div>
 
-        <div className='p-4 border rounded'>
-          <h2 className='font-bold'>Step 2: Connect your accounts</h2>
-          <p className='text-gray-600'>Link your existing services</p>
-        </div>
+            {renderStep()}
+          </div>
 
-        <div className='p-4 border rounded'>
-          <h2 className='font-bold'>Step 3: Set your goals</h2>
-          <p className='text-gray-600'>What do you want to accomplish?</p>
+          <div className='w-1/2 bg-[#F9F9F9]'></div>
         </div>
       </div>
 
-      <button
-        onClick={handleComplete}
-        className='w-full bg-black text-white p-3 rounded font-medium hover:bg-gray-800'
-      >
-        Complete Onboarding
-      </button>
+      {/* Footer at the bottom */}
+      <div className='mt-auto'>
+        <Footer onboarding={true} />
+      </div>
     </div>
   );
 };

@@ -7,7 +7,7 @@ import Logo from '../../components/commons/Logo';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(true);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
