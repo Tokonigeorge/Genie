@@ -8,54 +8,64 @@ interface Step2Props {
 const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
   return (
     <div className='space-y-6'>
-      <p className='text-[#777777]'>Help us understand how you'll use Genie</p>
+      <p className='text-[#777777] text-sm leading-5 -mt-2'>
+        Upload your logo and fill in your company details—we will set you up
+        right away.
+      </p>
 
-      <div className='space-y-4'>
-        <div className='w-full border border-[#8080801F] rounded-2xl p-4'>
-          <label className='flex items-center space-x-3'>
-            <input
-              type='checkbox'
-              className='form-checkbox h-5 w-5 text-[#292929]'
-            />
-            <span className='text-gray-700'>Content Creation</span>
-          </label>
+      <div className='flex items-center space-x-4 mb-6'>
+        <div className='h-16 w-16 rounded-xl bg-[#F0F0F0] flex items-center justify-center'>
+          {/* Image placeholder */}
         </div>
-
-        <div className='w-full border border-[#8080801F] rounded-2xl p-4'>
-          <label className='flex items-center space-x-3'>
-            <input
-              type='checkbox'
-              className='form-checkbox h-5 w-5 text-[#292929]'
-            />
-            <span className='text-gray-700'>Productivity & Organization</span>
-          </label>
-        </div>
-
-        <div className='w-full border border-[#8080801F] rounded-2xl p-4'>
-          <label className='flex items-center space-x-3'>
-            <input
-              type='checkbox'
-              className='form-checkbox h-5 w-5 text-[#292929]'
-            />
-            <span className='text-gray-700'>Research & Learning</span>
-          </label>
-        </div>
-
-        <div className='w-full border border-[#8080801F] rounded-2xl p-4'>
-          <label className='flex items-center space-x-3'>
-            <input
-              type='checkbox'
-              className='form-checkbox h-5 w-5 text-[#292929]'
-            />
-            <span className='text-gray-700'>Data Analysis</span>
-          </label>
+        <div className='space-y-2'>
+          <p className='text-[#949494] text-sm leading-5'>Company Logo</p>
+          <button className='border border-[#8080801F] font-semibold rounded-4xl  px-8 py-1.5 text-[#333333] text-sm leading-5 bg-white'>
+            Upload
+          </button>
         </div>
       </div>
 
-      <div className='flex space-x-4'>
+      <div className='space-y-4'>
+        <div className='w-full border border-[#8080801F] rounded-2xl p-3'>
+          <label
+            htmlFor='companyName'
+            className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
+          >
+            Company name
+          </label>
+          <input
+            id='companyName'
+            type='text'
+            placeholder='Example Company Inc'
+            className='w-full text-gray-800 text-sm font-geist border-none outline-none focus:outline-none'
+          />
+        </div>
+
+        <div className='w-full border border-[#8080801F] rounded-2xl p-3'>
+          <label
+            htmlFor='workspaceUrl'
+            className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
+          >
+            Workspace URL
+          </label>
+          <div className='flex items-center'>
+            <span className='text-[#777777] text-sm font-geist'>
+              app.genie/ai/
+            </span>
+            <input
+              id='workspaceUrl'
+              type='text'
+              placeholder='exampleco'
+              className='flex-1 text-[#CFCFCF] text-sm font-geist border-none outline-none focus:outline-none'
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className='flex space-x-4 mt-8'>
         <button
           onClick={onPrevious}
-          className='w-full cursor-pointer bg-transparent border border-[#292929] text-[#292929] p-4 rounded-[90px] font-medium hover:bg-gray-100 font-geist'
+          className='w-full cursor-pointer bg-transparent border border-[#8080801F] text-[#292929] p-4 rounded-[90px] font-medium hover:bg-gray-100 font-geist'
         >
           Back
         </button>
