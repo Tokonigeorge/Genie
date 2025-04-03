@@ -26,10 +26,10 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
       </div>
 
       <div className='space-y-4'>
-        <div className='w-full border border-[#8080801F] rounded-2xl p-3'>
+        <div className='w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
           <label
             htmlFor='companyName'
-            className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
+            className='block text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF] peer-focus:text-[#1F90FF]'
           >
             Company name
           </label>
@@ -37,14 +37,14 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
             id='companyName'
             type='text'
             placeholder='Example Company Inc'
-            className='w-full text-gray-800 text-sm font-geist border-none outline-none focus:outline-none'
+            className='w-full text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
           />
         </div>
 
-        <div className='w-full border border-[#8080801F] rounded-2xl p-3'>
+        <div className='w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
           <label
             htmlFor='workspaceUrl'
-            className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
+            className='block text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF] peer-focus:text-[#1F90FF]'
           >
             Workspace URL
           </label>
@@ -56,7 +56,7 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
               id='workspaceUrl'
               type='text'
               placeholder='exampleco'
-              className='flex-1 text-[#CFCFCF] text-sm font-geist border-none outline-none focus:outline-none'
+              className='flex-1 text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
             />
           </div>
         </div>
