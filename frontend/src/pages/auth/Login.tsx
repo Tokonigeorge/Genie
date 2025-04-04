@@ -4,10 +4,16 @@ import { useAuth } from '../../contexts/useAuth';
 import Footer from '../../components/layouts/Footer';
 import Logo from '../../components/commons/Logo';
 
-const Login: React.FC = () => {
+interface LoginProps {
+  isFirstTimeUser: boolean;
+  setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
+}
+
+const Login: React.FC<LoginProps> = ({
+  isFirstTimeUser,
+  setIsFirstTimeUser,
+}) => {
   const [email, setEmail] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +26,7 @@ const Login: React.FC = () => {
     login();
 
     if (isFirstTimeUser) {
+      setIsFirstTimeUser(false);
       navigate('/email-sent');
     } else {
       navigate('/onboarding');
@@ -27,7 +34,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className='flex min-h-screen'>
+    <div className='flex min-h-screen bg-[#F9F9F9]'>
       {/* Left side with form */}
       <div className='w-full md:w-1/2 flex flex-col p-10'>
         {/* Logo at the top */}
@@ -50,10 +57,10 @@ const Login: React.FC = () => {
             {/* Form */}
             <form onSubmit={handleSubmit}>
               <div className='mb-6'>
-                <div className='w-full border border-[#8080801F] rounded-2xl p-3'>
+                <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
                   <label
                     htmlFor='email'
-                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
+                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF]'
                   >
                     Email address
                   </label>
@@ -61,7 +68,7 @@ const Login: React.FC = () => {
                     id='email'
                     type='email'
                     placeholder='Yourname@example.com'
-                    className='w-full text-[#CFCFCF] text-sm font-geist border-none outline-none focus:outline-none'
+                    className='w-full text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required

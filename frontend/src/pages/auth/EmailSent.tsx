@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../../components/commons/Logo';
 import Footer from '../../components/layouts/Footer';
+import emailSentImage from '../../assets/email-sent.png';
 
 const EmailSent: React.FC = () => {
   return (
@@ -16,9 +17,9 @@ const EmailSent: React.FC = () => {
           {/* Responsive image */}
           <div className='mb-8 flex justify-center'>
             <img
-              src='../../assets/email-sent.png'
+              src={emailSentImage}
               alt='Email Sent'
-              className='w-3/4 max-w-xs'
+              className='w-full md:w-4/5 lg:w-3/4 max-w-2xl'
             />
           </div>
 

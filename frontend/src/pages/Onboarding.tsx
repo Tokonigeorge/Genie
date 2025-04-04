@@ -59,7 +59,7 @@ const Onboarding: React.FC = () => {
             <div className='w-1/2 p-10 bg-[#FCFCFC]'>
               <div className='mb-6'>
                 <p className='text-sm font-medium text-[#949494]'>
-                  0{currentStep}&nbsp;/&nbsp;04
+                  0{currentStep}&nbsp;/&nbsp;02
                 </p>
                 <h1 className='text-2xl leading-8 font-medium mt-4 text-[#333333]'>
                   {currentStep === 1

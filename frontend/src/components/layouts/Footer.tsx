@@ -1,10 +1,9 @@
-const Footer: React.FC = ({
-  elements,
-  onboarding,
-}: {
+interface FooterProps {
   elements?: string[];
   onboarding?: boolean;
-}) => {
+}
+
+const Footer: React.FC<FooterProps> = ({ elements, onboarding }) => {
   return (
     <div className='text-center text-sm font-medium text-[#777777] font-geist'>
       <div className='flex justify-between items-center space-x-4'>

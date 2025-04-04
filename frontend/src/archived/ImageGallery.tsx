@@ -19,7 +19,7 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
               alt={`Uploaded ${index + 1}`}
               className='object-cover w-full h-full'
               onError={(e) => {
-                console.error(`Failed to load image: ${image}`);
+                console.error(`Failed to load image: ${image} ${e}`);
                 // Optionally set a fallback image
                 // e.currentTarget.src = '/placeholder.png';
               }}
