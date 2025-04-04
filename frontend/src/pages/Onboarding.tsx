@@ -6,7 +6,7 @@ import Step1 from '../components/onboarding/Step1';
 import Step2 from '../components/onboarding/Step2';
 import Step3Success from '../components/onboarding/Step3Success';
 const Onboarding: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState(3);
+  const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
 
   const handleNext = () => {
