@@ -9,28 +9,36 @@ interface SignupProps {
   setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
 }
 
-const Signup: React.FC<SignupProps> = ({
-  isFirstTimeUser,
-  setIsFirstTimeUser,
-}) => {
-  const [email, setEmail] = useState('');
-
-  const { login } = useAuth();
+const Signup: React.FC<SignupProps> = () => {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    if (email.trim() === '') return;
-
-    login();
-
-    if (isFirstTimeUser) {
-      setIsFirstTimeUser(false);
-      navigate('/email-sent');
-    } else {
-      navigate('/onboarding');
+    try {
+      const { error } = await signUp(email, password);
+      if (error) throw error;
+      navigate('/email-sent', { state: { email } });
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An unknown error occurred'
+      );
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    const { error } = await signInWithGoogle();
+    if (error) setError(error.message);
   };
 
   return (
@@ -56,6 +64,7 @@ const Signup: React.FC<SignupProps> = ({
 
             {/* Form */}
             <form onSubmit={handleSubmit}>
+              {error && <div className='text-red-500 mb-4'>{error}</div>}
               <div className='mb-6'>
                 <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
                   <label
@@ -74,13 +83,30 @@ const Signup: React.FC<SignupProps> = ({
                     required
                   />
                 </div>
+                <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
+                  <label
+                    htmlFor='password'
+                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF] peer-focus:text-[#1F90FF]'
+                  >
+                    Password
+                  </label>
+                  <input
+                    id='password'
+                    type='password'
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder='Enter your password'
+                    className='w-full text-gray-800 text-sm font-geist border-none outline-none focus:outline-none'
+                  />
+                </div>
               </div>
 
               <button
                 type='submit'
-                className='w-full cursor-pointer bg-[#292929] text-white p-4 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
+                disabled={loading}
+                className='w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-[#292929] text-white p-4 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
               >
-                Create an Account
+                {loading ? 'Creating account...' : 'Create an Account'}
               </button>
             </form>
 
@@ -104,7 +130,11 @@ const Signup: React.FC<SignupProps> = ({
             </div>
 
             {/* Google login */}
-            <button className='w-full cursor-pointer flex items-center text-[#333333] text-base justify-center p-3 border border-[#8080801F] rounded-[90px] font-geist'>
+            <button
+              disabled={loading}
+              onClick={handleGoogleSignIn}
+              className='w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-[#333333] text-base justify-center p-3 border border-[#8080801F] rounded-[90px] font-geist'
+            >
               <svg
                 width='18'
                 height='18'

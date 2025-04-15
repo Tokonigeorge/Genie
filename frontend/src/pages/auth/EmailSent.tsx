@@ -4,8 +4,12 @@ import { Link } from 'react-router-dom';
 import Logo from '../../components/commons/Logo';
 import Footer from '../../components/layouts/Footer';
 import emailSentImage from '../../assets/email-sent.png';
+import { useLocation } from 'react-router-dom';
 
 const EmailSent: React.FC = () => {
+  const location = useLocation();
+  const email = location.state?.email;
+
   return (
     <div className='flex min-h-screen w-full flex-col p-10'>
       <div className='mb-8 flex '>
@@ -28,8 +32,8 @@ const EmailSent: React.FC = () => {
           </h1>
 
           <p className='text-[16px] text-[#777777] font-geist mb-8 leading-[24px]'>
-            We've sent a magic link to david@geniestudio.ai. Open your email and
-            tap the link to log in.
+            We've sent a magic link to {email}. Open your email and tap the link
+            to log in.
           </p>
 
           <Link

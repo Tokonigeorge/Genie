@@ -8,6 +8,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import EmailSent from './pages/auth/EmailSent';
 import Onboarding from './pages/Onboarding';
 import { useState } from 'react';
+import AuthCallback from './contexts/AuthCallback';
 
 function App() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(true);
@@ -43,7 +44,7 @@ function App() {
             <Route path='/' element={<Dashboard />} />
             <Route path='/onboarding' element={<Onboarding />} />
           </Route>
-
+          <Route path='/auth/callback' element={<AuthCallback />} />
           {/* Fallback redirect */}
           {/* <Route path='*' element={<Navigate to='/login' replace />} /> */}
         </Routes>
