@@ -2,17 +2,22 @@
 from pydantic import BaseModel, EmailStr
 from uuid import UUID
 from datetime import datetime
-
-class UserBase(BaseModel):
+from typing import Optional
+class UserCreate(BaseModel):
     email: EmailStr
-    full_name: str | None = None
+    password: str
+    full_name: Optional[str] = None
 
-class UserCreate(UserBase):
-    pass
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: UUID
+    email: EmailStr
+    full_name: Optional[str]
     created_at: datetime
+    organization_status: Optional[str] = None  # 'pending' or 'active'
     
     class Config:
         from_attributes = True
