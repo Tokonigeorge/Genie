@@ -1,5 +1,7 @@
 # app/services/auth.py
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
+from sqlalchemy.future import select
 from app.schemas.auth import UserCreate, UserLogin
 from app.models import User, Organization, OrganizationMember, MemberRole, MemberStatus
 from app.core.supabase import supabase_client
@@ -69,6 +71,21 @@ class AuthService:
             "organization_status": member.status if member else None,
             "session": auth_response.session
         }
+    async def _get_user_by_email(self, email: str) -> User:
+        """Retrieve a user by email address"""
+        result = await self.session.execute(
+            select(User).where(User.email == email)
+        )
+        return result.scalar_one_or_none()
+
+    # async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
+    #     """Retrieve a user's organization membership"""
+    #     result = await self.session.execute(
+    #         select(OrganizationMember)
+    #         .options(selectinload(OrganizationMember.organization))
+    #         .where(OrganizationMember.user_id == user_id)
+    #     )
+    #     return result.scalar_one_or_none()
 
     async def _get_organization_by_domain(self, domain: str):
         result = await self.session.execute(
@@ -95,7 +112,7 @@ class AuthService:
         except Exception as e:
             raise ValueError(f"Invalid credentials: {str(e)}")
 
-async def initiate_password_reset(self, email: str):
+    async def initiate_password_reset(self, email: str):
         """Initiates the password reset process via Supabase"""
         try:
             await supabase_client.auth.reset_password_email(email)
@@ -104,13 +121,13 @@ async def initiate_password_reset(self, email: str):
             print(f"Password reset error: {str(e)}")
             # We return success even if email doesn't exist (security best practice)
 
-async def complete_password_reset(self, token: str, new_password: str):
+    async def complete_password_reset(self, token: str, new_password: str):
         """Completes the password reset process"""
         try:
             await supabase_client.auth.reset_password(token, new_password)
         except Exception as e:
             raise ValueError(f"Invalid or expired reset token: {str(e)}")
-async def handle_email_verification(self, token: str):
+    async def handle_email_verification(self, token: str):
         """Handles post-verification business logic"""
         try:
             # Verify token with Supabase
@@ -139,7 +156,7 @@ async def handle_email_verification(self, token: str):
         except Exception as e:
             raise ValueError(f"Email verification failed: {str(e)}")
         
-async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
+    async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
         result = await self.session.execute(
             select(OrganizationMember)
             .where(OrganizationMember.user_id == user_id)
