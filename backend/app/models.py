@@ -1,54 +1,77 @@
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-from bson import ObjectId
-from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import core_schema
-from pydantic import BaseModel, Field, GetJsonSchemaHandler
+from sqlalchemy import (
+    Column, String, DateTime, Enum, ForeignKey
+)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+import uuid
+import enum
+from app.core.database import Base
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls,
-        _source_type: any,
-        _handler: any,
-    ) -> core_schema.CoreSchema:
-        return core_schema.chain_schema([
-            core_schema.str_schema(),
-            core_schema.no_info_plain_validator_function(cls.validate),
-        ])
+# --- ENUMS ---
+class MemberRole(str, enum.Enum):
+    admin = "admin"
+    member = "member"
 
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid objectid")
-        return ObjectId(v)
-    
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, 
-        _schema_generator: GetJsonSchemaHandler,
-        _field_schema: JsonSchemaValue,
-    ) -> JsonSchemaValue:
-        return {"type": "string"}   
+class MemberStatus(str, enum.Enum):
+    invited = "invited"
+    active = "active"
 
-class ProfileBase(BaseModel):
-    id: PyObjectId = None
-    prompt: str
-    uploaded_images: List[str]
-    json_profile: dict
-    generated_image: Optional[str] = None
-    created_at: datetime = datetime.now()
-    
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {
-            ObjectId: str
-        }
+class InviteRole(str, enum.Enum):
+    admin = "admin"
+    member = "member"
 
-class GenerateRequest(BaseModel):
-    prompt: str
-    profile_id: str
+# --- MODELS ---
 
-class BrandProfileRequest(BaseModel):
-    images: List[str]
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    domain = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
+    invites = relationship("OrganizationInvite", back_populates="organization", cascade="all, delete-orphan")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    full_name = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    organization_memberships = relationship("OrganizationMember", back_populates="user", cascade="all, delete-orphan")
+    invited_memberships = relationship("OrganizationMember", back_populates="inviter", foreign_keys='OrganizationMember.invited_by')
+
+class OrganizationMember(Base):
+    __tablename__ = "organization_members"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    role = Column(Enum(MemberRole, name="memberrole"), nullable=False)
+    status = Column(Enum(MemberStatus, name="memberstatus"), nullable=False)
+    invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    user = relationship("User", back_populates="organization_memberships", foreign_keys=[user_id])
+    inviter = relationship("User", back_populates="invited_memberships", foreign_keys=[invited_by])
+    organization = relationship("Organization", back_populates="members")
+
+class OrganizationInvite(Base):
+    __tablename__ = "organization_invites"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=False)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    role = Column(Enum(InviteRole, name="inviterole"), nullable=False)
+    token = Column(String, unique=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    organization = relationship("Organization", back_populates="invites")

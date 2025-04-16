@@ -33,3 +33,6 @@ dist-ssr
 *.ttf
 *.svg
 *.otf
+
+alembic.ini
+alembic/versions/*
