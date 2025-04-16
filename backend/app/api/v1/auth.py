@@ -34,3 +34,47 @@ async def login(
         }
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
+    
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        auth_service = AuthService(db)
+        await auth_service.initiate_password_reset(request.email)
+        return {"message": "If an account exists with this email, a password reset link has been sent"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    @router.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        auth_service = AuthService(db)
+        await auth_service.complete_password_reset(request.token, request.new_password)
+        return {"message": "Password has been reset successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/verify")
+async def verify_email(
+    token: str,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        auth_service = AuthService(db)
+        result = await auth_service.handle_email_verification(token)
+        # Redirect to appropriate frontend route
+        redirect_url = (
+            f"/onboarding" if result["is_new_org"] 
+            else "/dashboard"
+        )
+        return Response(
+            status_code=302,
+            headers={"Location": redirect_url}
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

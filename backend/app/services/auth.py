@@ -94,3 +94,54 @@ class AuthService:
             })
         except Exception as e:
             raise ValueError(f"Invalid credentials: {str(e)}")
+
+async def initiate_password_reset(self, email: str):
+        """Initiates the password reset process via Supabase"""
+        try:
+            await supabase_client.auth.reset_password_email(email)
+        except Exception as e:
+            # Log the error but return generic message for security
+            print(f"Password reset error: {str(e)}")
+            # We return success even if email doesn't exist (security best practice)
+
+async def complete_password_reset(self, token: str, new_password: str):
+        """Completes the password reset process"""
+        try:
+            await supabase_client.auth.reset_password(token, new_password)
+        except Exception as e:
+            raise ValueError(f"Invalid or expired reset token: {str(e)}")
+async def handle_email_verification(self, token: str):
+        """Handles post-verification business logic"""
+        try:
+            # Verify token with Supabase
+            user = await supabase_client.auth.verify_email(token)
+            
+            # Get user from our database
+            db_user = await self._get_user_by_email(user.email)
+            if not db_user:
+                raise ValueError("User not found in database")
+
+            # Get organization membership
+            member = await self._get_user_membership(db_user.id)
+            if not member:
+                raise ValueError("No organization membership found")
+
+            # Update member status if needed
+            if member.status == MemberStatus.invited:
+                member.status = MemberStatus.active
+                await self.session.commit()
+
+            return {
+                "is_new_org": member.role == MemberRole.admin,
+                "organization_id": member.organization_id
+            }
+
+        except Exception as e:
+            raise ValueError(f"Email verification failed: {str(e)}")
+        
+async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
+        result = await self.session.execute(
+            select(OrganizationMember)
+            .where(OrganizationMember.user_id == user_id)
+        )
+        return result.scalar_one_or_none()
