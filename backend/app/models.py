@@ -31,7 +31,8 @@ class Organization(Base):
     domain = Column(String, unique=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
-
+    logo_url = Column(String, nullable=True)
+    workspace_url = Column(String, nullable=True)
     members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
     invites = relationship("OrganizationInvite", back_populates="organization", cascade="all, delete-orphan")
 
@@ -40,7 +41,10 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
     full_name = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 

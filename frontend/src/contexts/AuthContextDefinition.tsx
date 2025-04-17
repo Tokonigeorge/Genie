@@ -1,10 +1,11 @@
 import { AuthError } from '@supabase/supabase-js';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { createContext } from 'react';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  session: Session | null;
   signUp: (
     email: string,
     password: string

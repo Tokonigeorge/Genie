@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import Footer from '../../components/layouts/Footer';
 import Logo from '../../components/commons/Logo';
-
+import { authApi } from '../../services/auth';
+import AccessRequest from '../../components/onboarding/AccessRequest';
+import DomainCheckDialog from '../../components/onboarding/DomainCheckDialog';
 interface SignupProps {
   isFirstTimeUser: boolean;
   setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
@@ -14,6 +16,13 @@ const Signup: React.FC<SignupProps> = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showDomainCheck, setShowDomainCheck] = useState(false);
+  const [showAccessRequest, setShowAccessRequest] = useState(false);
+  const [domainInfo, setDomainInfo] = useState<{
+    domain: string;
+    orgId?: string;
+  } | null>(null);
+
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -25,7 +34,16 @@ const Signup: React.FC<SignupProps> = () => {
     try {
       const { error } = await signUp(email, password);
       if (error) throw error;
-      navigate('/email-sent', { state: { email } });
+      // Register with our backend
+      const response = await authApi.signup(email, password);
+
+      if (response.has_existing_org) {
+        setDomainInfo({ domain: response.domain });
+        setShowDomainCheck(true);
+      } else {
+        // No existing org, redirect to email verification
+        navigate('/email-sent', { state: { email } });
+      }
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'An unknown error occurred'
@@ -41,8 +59,37 @@ const Signup: React.FC<SignupProps> = () => {
     if (error) setError(error.message);
   };
 
+  const handleRequestAccess = async () => {
+    if (!domainInfo) return;
+    try {
+      await authApi.requestAccess(domainInfo.orgId!);
+      setShowDomainCheck(false);
+      setShowAccessRequest(true);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An unknown error occurred'
+      );
+    }
+  };
+
+  const handleCreateNew = () => {
+    setShowDomainCheck(false);
+    navigate('/onboarding');
+  };
+
   return (
     <div className='flex min-h-screen bg-[#F9F9F9]'>
+      {showDomainCheck && domainInfo && (
+        <DomainCheckDialog
+          domain={domainInfo.domain}
+          onRequestAccess={handleRequestAccess}
+          onCreateNew={handleCreateNew}
+        />
+      )}
+
+      {showAccessRequest && domainInfo && (
+        <AccessRequest domain={domainInfo.domain} />
+      )}
       {/* Left side with form */}
       <div className='w-full md:w-1/2 flex flex-col p-10'>
         {/* Logo at the top */}

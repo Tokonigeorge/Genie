@@ -4,12 +4,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { step2Schema } from '../../utils/onboardingValidation';
 
+type FormData = z.infer<typeof step2Schema>;
 interface Step2Props {
-  onNext: () => void;
+  onNext: (data: FormData) => void;
   onPrevious: () => void;
 }
-
-type FormData = z.infer<typeof step2Schema>;
 
 const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -32,12 +31,13 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
         setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+      //todo: upload image to supabase and get the url
     }
   };
 
   const onSubmit = (data: FormData) => {
     console.log(data);
-    onNext();
+    onNext(data);
   };
 
   return (
@@ -98,6 +98,27 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
           {errors.companyName && (
             <p className='text-red-500 text-xs -mt-1'>
               {errors.companyName.message}
+            </p>
+          )}
+
+          <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
+            <label
+              htmlFor='domain'
+              className='block text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF]'
+            >
+              Domain
+            </label>
+            <input
+              id='domain'
+              type='text'
+              placeholder='Example Company Inc'
+              className='w-full text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
+              {...register('companyName')}
+            />
+          </div>
+          {errors.domain && (
+            <p className='text-red-500 text-xs -mt-1'>
+              {errors.domain.message}
             </p>
           )}
 

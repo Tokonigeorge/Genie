@@ -2,7 +2,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from sqlalchemy.future import select
-from app.schemas.auth import UserCreate, UserLogin
+from app.schemas.auth import UserCreate, UserLogin, OrganizationCreate, UserUpdate
 from app.models import User, Organization, OrganizationMember, MemberRole, MemberStatus
 from app.core.supabase import supabase_client
 
@@ -27,32 +27,20 @@ class AuthService:
         self.session.add(db_user)
 
         if existing_org:
-            # Create pending membership
             member = OrganizationMember(
-                user=db_user,
-                organization=existing_org,
-                role=MemberRole.member,
-                status=MemberStatus.invited
-            )
-            self.session.add(member)
-        else:
-            # Create new organization and add user as admin
-            new_org = Organization(
-                name=f"{domain.split('.')[0].title()} Organization",  # Temporary name
-                domain=domain
-            )
-            self.session.add(new_org)
-            
-            member = OrganizationMember(
-                user=db_user,
-                organization=new_org,
-                role=MemberRole.admin,
-                status=MemberStatus.active
-            )
-            self.session.add(member)
+            user=db_user,
+            organization=existing_org,
+            role=MemberRole.member,
+            status=MemberStatus.invited
+        )
+        self.session.add(member)
 
         await self.session.commit()
-        return db_user
+        return {
+        "user": db_user,
+        "has_existing_org": bool(existing_org),
+        "domain": domain
+        }
 
     async def login_user(self, login_data: UserLogin):
         # 1. Authenticate with Supabase
@@ -77,7 +65,17 @@ class AuthService:
             select(User).where(User.email == email)
         )
         return result.scalar_one_or_none()
-
+    async def update_user(self, user_id: UUID, user_data: UserUpdate):
+        """Update user information"""
+        user = await self._get_user_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+        
+        for field, value in user_data.dict(exclude_unset=True).items():
+            setattr(user, field, value)
+        
+        await self.session.commit()
+        return user
     # async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
     #     """Retrieve a user's organization membership"""
     #     result = await self.session.execute(
@@ -162,3 +160,43 @@ class AuthService:
             .where(OrganizationMember.user_id == user_id)
         )
         return result.scalar_one_or_none()
+    
+    async def _get_user_by_id(self, user_id: UUID) -> User:
+        """Retrieve a user by ID"""
+        result = await self.session.execute(
+            select(User).where(User.id == user_id)
+        )
+        return result.scalar_one_or_none()
+    
+    async def create_organization(self, user_id: UUID, org_data: OrganizationCreate):
+        """Create organization during onboarding"""
+        user = await self._get_user_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+
+        # Check if user already has an organization
+        existing_membership = await self._get_user_membership(user_id)
+        if existing_membership:
+            raise ValueError("User already belongs to an organization")
+
+        # Create new organization
+        new_org = Organization(
+            name=org_data.name,
+            domain=org_data.domain
+        )
+        self.session.add(new_org)
+        
+        # Create admin membership
+        member = OrganizationMember(
+            user=user,
+            organization=new_org,
+            role=MemberRole.admin,
+            status=MemberStatus.active
+        )
+        self.session.add(member)
+        
+        await self.session.commit()
+        return {
+            "organization": new_org,
+            "role": MemberRole.admin
+        }
