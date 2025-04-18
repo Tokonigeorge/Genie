@@ -17,11 +17,19 @@ interface SignupResponse {
 // }
 
 export const authApi = {
-  signup: async (email: string, password: string) => {
+  signup: async (
+    email: string,
+    full_name: string | null,
+    supabase_user_id: string
+  ) => {
     const response = await api.post<SignupResponse>('/auth/register', {
       email,
-      password,
+      full_name,
+      supabase_user_id,
     });
+    if (response.status !== 200) {
+      throw new Error('Registration failed');
+    }
     return response.data;
   },
 

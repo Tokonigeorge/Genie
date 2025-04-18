@@ -48,7 +48,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
-    organization_memberships = relationship("OrganizationMember", back_populates="user", cascade="all, delete-orphan")
+    organization_memberships = relationship("OrganizationMember", back_populates="user",  foreign_keys="OrganizationMember.user_id", cascade="all, delete-orphan")
     invited_memberships = relationship("OrganizationMember", back_populates="inviter", foreign_keys='OrganizationMember.invited_by')
 
 class OrganizationMember(Base):

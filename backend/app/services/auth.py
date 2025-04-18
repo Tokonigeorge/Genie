@@ -15,25 +15,26 @@ class AuthService:
         domain = user_data.email.split('@')[1]
         existing_org = await self._get_organization_by_domain(domain)
 
-        # 2. Create Supabase auth user
-        supabase_user = await self._create_supabase_user(user_data)
+        # # 2. Create Supabase auth user
+        # supabase_user = await self._create_supabase_user(user_data)
 
         # 3. Create user in our database
         db_user = User(
-            id=supabase_user.id,  # Use Supabase user ID
+            id=user_data.supabase_user_id,  # Use Supabase user ID
             email=user_data.email,
             full_name=user_data.full_name
         )
         self.session.add(db_user)
+        await self.session.flush()
 
         if existing_org:
             member = OrganizationMember(
-            user=db_user,
-            organization=existing_org,
+            user_id=db_user.id,
+            organization_id=existing_org.id,
             role=MemberRole.member,
             status=MemberStatus.invited
-        )
-        self.session.add(member)
+            )
+            self.session.add(member)
 
         await self.session.commit()
         return {
@@ -91,15 +92,15 @@ class AuthService:
         )
         return result.scalar_one_or_none()
 
-    async def _create_supabase_user(self, user_data: UserCreate):
-        try:
-            response = await supabase_client.auth.sign_up({
-                "email": user_data.email,
-                "password": user_data.password
-            })
-            return response.user
-        except Exception as e:
-            raise ValueError(f"Failed to create Supabase user: {str(e)}")
+    # async def _create_supabase_user(self, user_data: UserCreate):
+    #     try:
+    #         response = await supabase_client.auth.sign_up({
+    #             "email": user_data.email,
+    #             "password": user_data.password
+    #         })
+    #         return response.user
+    #     except Exception as e:
+    #         raise ValueError(f"Failed to create Supabase user: {str(e)}")
 
     async def _authenticate_supabase(self, login_data: UserLogin):
         try:

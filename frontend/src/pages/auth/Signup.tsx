@@ -32,10 +32,13 @@ const Signup: React.FC<SignupProps> = () => {
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
-      if (error) throw error;
+      const { data: supabaseData, error: supabaseError } = await signUp(
+        email,
+        password
+      );
+      if (supabaseError) throw supabaseError;
       // Register with our backend
-      const response = await authApi.signup(email, password);
+      const response = await authApi.signup(email, null, supabaseData.user.id);
 
       if (response.has_existing_org) {
         setDomainInfo({ domain: response.domain });
@@ -112,7 +115,7 @@ const Signup: React.FC<SignupProps> = () => {
             {/* Form */}
             <form onSubmit={handleSubmit}>
               {error && <div className='text-red-500 mb-4'>{error}</div>}
-              <div className='mb-6'>
+              <div className='mb-6 flex flex-col gap-4'>
                 <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
                   <label
                     htmlFor='email'

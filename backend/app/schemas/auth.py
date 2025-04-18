@@ -6,8 +6,8 @@ from typing import Optional
 from app.models import MemberRole
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
     full_name: Optional[str] = None
+    supabase_user_id: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
