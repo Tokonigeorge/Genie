@@ -60,6 +60,7 @@ class OrganizationResponse(BaseModel):
     id: UUID
     name: str
     domain: str
+    workspace_url: str
     logo_url: Optional[str] = None
     role: MemberRole
 
@@ -79,7 +80,7 @@ class OrganizationBase(BaseModel):
     logo_url: Optional[str] = None
 class OrganizationCreate(OrganizationBase):
     workspace_url: str
-    logo_url: Optional[str] = None
+
 class OnboardingStatusResponse(BaseModel):
     user_id: UUID
     email: EmailStr
@@ -91,3 +92,5 @@ class OnboardingStatusResponse(BaseModel):
     organization_id: Optional[UUID] = None
     organization_name: Optional[str] = None
     organization_domain: Optional[str] = None
+    domain_exists: Optional[bool] = None
+    domain: Optional[str] = None

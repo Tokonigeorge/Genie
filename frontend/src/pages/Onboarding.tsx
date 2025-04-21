@@ -13,13 +13,13 @@ import AccessRequest from '../components/onboarding/AccessRequest';
 
 type Step1Data = z.infer<typeof step1Schema>;
 type Step2Data = z.infer<typeof step2Schema>;
-
 type OnboardingState =
   | 'loading'
   | 'newUser'
+  | 'newUserWithOrg' // Add this new state
   | 'pendingAccess'
   | 'error'
-  | 'success'; // De
+  | 'success';
 
 const Onboarding: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -49,54 +49,6 @@ const Onboarding: React.FC = () => {
   //     navigate('/');
   //   }
   // };
-  // useEffect(() => {
-  //   // Wait for auth loading to finish and session to be potentially available
-  //   if (!authLoading && session) {
-  //     const fetchStatus = async () => {
-  //       setOnboardingState('loading');
-  //       setError(null);
-  //       try {
-  //         const data = await authApi.getOnboardingStatus();
-  //         setStatusData(data);
-  //         if (data.membership_status === 'active') {
-  //           // Already active member, go to dashboard
-  //           navigate('/dashboard');
-  //         } else if (data.membership_status === 'invited') {
-  //           // User is invited but not active yet
-  //           setOnboardingState('pendingAccess');
-  //         } else if (!data.membership_status) {
-  //           // No membership exists, start the new user onboarding flow
-  //           // Check if first/last name exist from statusData to potentially skip Step 1
-  //           if (data.first_name && data.last_name) {
-  //             setCurrentStep(2); // Skip to org creation if name exists
-  //           } else {
-  //             setCurrentStep(1);
-  //           }
-  //           setOnboardingState('newUser');
-  //         } else {
-  //           // Handle unexpected statuses if necessary
-  //           setOnboardingState('error');
-  //           setError('Unexpected membership status received.');
-  //         }
-  //       } catch (err) {
-  //         console.error('Error fetching onboarding status:', err);
-  //         setError(
-  //           err instanceof Error
-  //             ? err.message
-  //             : 'Failed to fetch onboarding status.'
-  //         );
-  //         setOnboardingState('error');
-  //       }
-  //     };
-  //     fetchStatus();
-  //   } else if (!authLoading && !session) {
-  //     // No session, redirect to login
-  //     // This can happen if the user tries to access /onboarding directly
-  //     // Or if the Supabase redirect didn't establish a session
-  //     navigate('/login');
-  //   }
-  //   // Dependency array includes authLoading and session
-  // }, [authLoading, session, navigate]);
 
   useEffect(() => {
     let mounted = true;
@@ -117,12 +69,18 @@ const Onboarding: React.FC = () => {
         } else if (data.membership_status === 'invited') {
           setOnboardingState('pendingAccess');
         } else if (!data.membership_status) {
-          if (data.first_name && data.last_name) {
-            setCurrentStep(2);
+          if (data.domain_exists) {
+            // Domain exists but user isn't a member yet
+            setOnboardingState('newUserWithOrg');
           } else {
-            setCurrentStep(1);
+            // Completely new user, no existing org
+            if (data.first_name && data.last_name) {
+              setCurrentStep(2);
+            } else {
+              setCurrentStep(1);
+            }
+            setOnboardingState('newUser');
           }
-          setOnboardingState('newUser');
         } else {
           setOnboardingState('error');
           setError('Unexpected membership status received.');
@@ -150,13 +108,6 @@ const Onboarding: React.FC = () => {
     };
   }, [authLoading, session, navigate, statusData]);
 
-  // const handleStep1Complete = (data: Step1Data) => {
-  //   // setFormData((prev) => ({ ...prev, step1: data }));
-  //   console.log(data, 'step1');
-  //   setCurrentStep(2);
-  //   //todo: update user info with first name and last name
-  // };
-
   const handleStep1Complete = async (data: Step1Data) => {
     // Update user info via API
     try {
@@ -171,6 +122,7 @@ const Onboarding: React.FC = () => {
           : null
       );
       setCurrentStep(2);
+      setError(null);
     } catch (updateError) {
       console.error('Error updating user:', updateError);
       // Show error to user on Step 1 form?
@@ -201,16 +153,20 @@ const Onboarding: React.FC = () => {
       formData.append('name', data.companyName);
       // Ensure domain is derived correctly (maybe from user email or input)
       // For now, assuming it's part of Step 2 data
-      const userDomain = statusData?.email.split('@')[1] || data.domain; // Prioritize fetched email domain
+      const userDomain = statusData?.email.split('@')[1] || '';
       formData.append('domain', userDomain);
       formData.append('workspace_url', data.workspaceUrl);
       if (data.companyLogo) {
         formData.append('logo', data.companyLogo);
       }
-
+      console.log('Form data entries:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
       await authApi.createOrganization(formData);
       setOnboardingState('success'); // Move to success state
       setCurrentStep(3); // Also update step number for consistency if needed
+      setError(null);
     } catch (orgError) {
       console.error('Error creating organization:', orgError);
       // Show error on Step 2 form?
@@ -264,6 +220,18 @@ const Onboarding: React.FC = () => {
         return (
           <AccessRequest
             domain={statusData?.organization_domain || 'your company'}
+          />
+        );
+      case 'newUserWithOrg':
+        return (
+          <AccessRequest
+            domain={
+              statusData?.organization_domain ||
+              statusData?.email.split('@')[1] ||
+              'your company'
+            }
+            orgId={statusData?.organization_id || ''}
+            isNewUser={true}
           />
         );
       case 'newUser':

@@ -29,14 +29,7 @@ export const step2Schema = z.object({
     .string()
     .min(1, 'Company name is required')
     .max(100, 'Company name must be less than 100 characters'),
-  domain: z
-    .string()
-    .min(1, 'Domain is required')
-    .max(50, 'Domain must be less than 50 characters')
-    .regex(
-      /^[a-z0-9-]+$/,
-      'Only lowercase letters, numbers, and hyphens are allowed'
-    ),
+
   workspaceUrl: z
     .string()
     .min(1, 'Workspace URL is required')

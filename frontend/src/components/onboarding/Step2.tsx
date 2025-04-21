@@ -103,27 +103,6 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
 
           <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
             <label
-              htmlFor='domain'
-              className='block text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF]'
-            >
-              Domain
-            </label>
-            <input
-              id='domain'
-              type='text'
-              placeholder='Example Company Inc'
-              className='w-full text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
-              {...register('companyName')}
-            />
-          </div>
-          {errors.domain && (
-            <p className='text-red-500 text-xs -mt-1'>
-              {errors.domain.message}
-            </p>
-          )}
-
-          <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
-            <label
               htmlFor='workspaceUrl'
               className='block text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF] '
             >

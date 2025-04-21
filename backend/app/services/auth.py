@@ -172,6 +172,9 @@ class AuthService:
 
         if not user:
             raise ValueError("User not found")
+        # Check if domain exists in any organization
+        domain = user.email.split('@')[1]
+        existing_org = await self._get_organization_by_domain(domain)
 
         membership = user.organization_memberships[0] if user.organization_memberships else None
         organization = membership.organization if membership else None
@@ -187,8 +190,15 @@ class AuthService:
             "organization_id": organization.id if organization else None,
             "organization_name": organization.name if organization else None,
             "organization_domain": organization.domain if organization else None,
+            "domain_exists": bool(existing_org),
+            "domain": domain,
         }
-        
+    async def _get_organization_by_domain(self, domain: str) -> Organization:
+        """Retrieve an organization by domain"""
+        result = await self.session.execute(
+            select(Organization).where(Organization.domain == domain)
+        )
+        return result.scalar_one_or_none()
     async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
         result = await self.session.execute(
             select(OrganizationMember)
@@ -217,7 +227,9 @@ class AuthService:
         # Create new organization
         new_org = Organization(
             name=org_data.name,
-            domain=org_data.domain
+            domain=org_data.domain,
+            workspace_url=org_data.workspace_url,
+            logo_url=org_data.logo_url
         )
         self.session.add(new_org)
         
@@ -231,7 +243,12 @@ class AuthService:
         self.session.add(member)
         
         await self.session.commit()
+        # await self.session.refresh(new_org)  # Refresh to get the generated ID
         return {
-            "organization": new_org,
+            "id": new_org.id,
+            "name": new_org.name,
+            "domain": new_org.domain,
+            "workspace_url": new_org.workspace_url,
+            "logo_url": new_org.logo_url,
             "role": MemberRole.admin
         }

@@ -30,6 +30,8 @@ export interface OnboardingStatusResponse {
   organization_id: string | null;
   organization_name: string | null;
   organization_domain: string | null;
+  domain_exists: boolean | null;
+  domain: string | null;
 }
 
 // interface OrganizationCreate {
@@ -80,7 +82,7 @@ export const authApi = {
   },
   updateUser: async (userData: { first_name?: string; last_name?: string }) => {
     try {
-      const response = await api.patch('/users/me', userData); // Use PATCH
+      const response = await api.patch('/auth/users/me', userData);
       return response.data; // Returns UserResponse structure
     } catch (error: any) {
       const detail = error.response?.data?.detail || 'Failed to update user';
@@ -90,7 +92,14 @@ export const authApi = {
 
   createOrganization: async (formData: FormData) => {
     try {
-      const response = await api.post('/auth/create-organization', formData);
+      console.log('Sending FormData:', Object.fromEntries(formData));
+      const response = await api.post('/auth/create-organization', formData, {
+        headers: {
+          // Don't set Content-Type - it will be set automatically with boundary for FormData
+          'Content-Type': 'multipart/form-data',
+        },
+        transformRequest: [(data) => data],
+      });
       return response.data;
     } catch (error: any) {
       const detail =
@@ -99,7 +108,6 @@ export const authApi = {
     }
   },
   requestAccess: async (orgId: string) => {
-    // ... unchanged ...
     try {
       const response = await api.post(`/auth/request-access/${orgId}`); // Ensure backend route exists
       return response.data;

@@ -139,10 +139,18 @@ async def create_organization(
     db: AsyncSession = Depends(get_db)
 ):
     try:
+                # Debug: Print received data
+        print(f"Received form data: name={name}, domain={domain}, workspace_url={workspace_url}")
         storage_service = StorageService()
-        logo_url = None
-        if logo:
+      
+        try:
             logo_url = await storage_service.upload_file(logo, "organization-logos")
+        except Exception as upload_error:
+            print(f"Logo upload error details: {str(upload_error)}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to upload logo: {str(upload_error)}"
+            )
 
         org_data = OrganizationCreate(
             name=name,
