@@ -10,7 +10,7 @@ import { step1Schema, step2Schema } from '../utils/onboardingValidation';
 import { z } from 'zod';
 import { useAuth } from '../contexts/useAuth';
 import AccessRequest from '../components/onboarding/AccessRequest';
-
+import { PUBLIC_EMAIL_DOMAINS } from '../constants/emails';
 type Step1Data = z.infer<typeof step1Schema>;
 type Step2Data = z.infer<typeof step2Schema>;
 type OnboardingState =
@@ -49,13 +49,12 @@ const Onboarding: React.FC = () => {
   //     navigate('/');
   //   }
   // };
-
   useEffect(() => {
     let mounted = true;
 
     const fetchStatus = async () => {
       // Don't fetch if we already have status data
-      if (statusData || !session) return;
+      if (!session || authLoading) return;
 
       setOnboardingState('loading');
       setError(null);
@@ -64,12 +63,17 @@ const Onboarding: React.FC = () => {
         if (!mounted) return;
 
         setStatusData(data);
+
+        const userDomain = data.domain || '';
         if (data.membership_status === 'active') {
           navigate('/');
         } else if (data.membership_status === 'invited') {
           setOnboardingState('pendingAccess');
         } else if (!data.membership_status) {
-          if (data.domain_exists) {
+          if (
+            data.domain_exists &&
+            !PUBLIC_EMAIL_DOMAINS.includes(userDomain)
+          ) {
             // Domain exists but user isn't a member yet
             setOnboardingState('newUserWithOrg');
           } else {
@@ -97,16 +101,12 @@ const Onboarding: React.FC = () => {
       }
     };
 
-    if (!authLoading && session) {
-      fetchStatus();
-    } else if (!authLoading && !session) {
-      navigate('/login');
-    }
+    fetchStatus();
 
     return () => {
       mounted = false;
     };
-  }, [authLoading, session, navigate, statusData]);
+  }, [authLoading, session, navigate]);
 
   const handleStep1Complete = async (data: Step1Data) => {
     // Update user info via API
