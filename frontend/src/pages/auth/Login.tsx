@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import Footer from '../../components/layouts/Footer';
 import Logo from '../../components/commons/Logo';
+import { authApi } from '../../services/auth';
 
 interface LoginProps {
   isFirstTimeUser: boolean;
@@ -17,6 +18,24 @@ const Login: React.FC<LoginProps> = () => {
   const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
+  const handleLoginSuccess = (loginData: any) => {
+    if (loginData.needs_onboarding) {
+      navigate('/onboarding');
+    } else {
+      navigate('/');
+    }
+  };
+  const processLogin = async (email: string, supabase_user_id: string) => {
+    try {
+      console.log('Processing login for:', email, supabase_user_id);
+      const backendResponse = await authApi.login(email, supabase_user_id);
+      handleLoginSuccess(backendResponse);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to complete login'
+      );
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -25,12 +44,21 @@ const Login: React.FC<LoginProps> = () => {
     if (email.trim() === '') return;
 
     try {
-      const { error } = await signIn(email, password);
-      if (error) {
-        setError(error.message);
-        return;
+      const { data: supabaseData, error: supabaseError } = await signIn(
+        email,
+        password
+      );
+
+      if (supabaseError || !supabaseData.user) {
+        throw new Error(supabaseError?.message || 'Authentication failed');
       }
-      navigate('/onboarding');
+      console.log(
+        'supabaseData',
+        supabaseData,
+        supabaseData.user.email,
+        supabaseData.user.id
+      );
+      await processLogin(supabaseData.user.email, supabaseData.user.id);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'An unknown error occurred'
@@ -42,8 +70,25 @@ const Login: React.FC<LoginProps> = () => {
 
   const handleGoogleSignIn = async () => {
     setError(null);
-    const { error } = await signInWithGoogle();
-    if (error) setError(error.message);
+    setLoading(true);
+    try {
+      const { data: supabaseData, error: supabaseError } =
+        await signInWithGoogle();
+
+      if (supabaseError || !supabaseData.user) {
+        throw new Error(
+          supabaseError?.message || 'Google authentication failed'
+        );
+      }
+
+      await processLogin(supabaseData.user.email, supabaseData.user.id);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An unknown error occurred'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,7 +115,7 @@ const Login: React.FC<LoginProps> = () => {
             {/* Form */}
             <form onSubmit={handleSubmit}>
               {error && <div className='text-red-500 mb-4'>{error}</div>}
-              <div className='mb-6'>
+              <div className='mb-6 space-y-4'>
                 <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
                   <label
                     htmlFor='email'

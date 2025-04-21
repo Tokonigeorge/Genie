@@ -54,22 +54,58 @@ class AuthService:
     
 
     async def login_user(self, login_data: UserLogin):
-        # 1. Authenticate with Supabase
-        auth_response = await self._authenticate_supabase(login_data)
-        
-        # 2. Get user from our database
-        user = await self._get_user_by_email(login_data.email)
-        if not user:
-            raise ValueError("User not found in database")
+        try:
+            print(f"Processing login for email: {login_data.email} and supabase_user_id: {login_data.supabase_user_id}")
+            # 1. Authenticate with Supabase
+            user = await self._get_user_by_email(login_data.email)
 
-        # 3. Get organization status
-        member = await self._get_user_membership(user.id)
-        
-        return {
-            "user": user,
-            "organization_status": member.status if member else None,
-            "session": auth_response.session
-        }
+            if not user:
+                print(f"Creating new user for email: {login_data.email}")
+                # Create user if they don't exist (first time Supabase login)
+                user = User(
+                    id=login_data.supabase_user_id,
+                    email=login_data.email,
+                    full_name=None  # Will be set during onboarding
+                )
+                self.session.add(user)
+                await self.session.commit()
+                print(f"New user created with ID: {user.id}") 
+
+            # 3. Get organization status
+            member = await self._get_user_membership(user.id)
+            organization = None
+            if member:
+                # Use join to fetch organization data in a single query
+                result = await self.session.execute(
+                select(Organization)
+                .join(OrganizationMember)
+                .where(OrganizationMember.user_id == user.id)
+                .limit(1)
+            )
+                organization = result.scalar_one_or_none()
+            
+            return {
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name
+                },
+                "organization": {
+                    "id": organization.id if organization else None,
+                    "name": organization.name if organization else None,
+                    "domain": organization.domain if organization else None,
+                } if organization else None,
+                "membership": {
+                    "status": member.status if member else None,
+                    "role": member.role if member else None
+                } if member else None,
+                "needs_onboarding": not user.first_name or not user.last_name or not member
+            }
+        except Exception as e:
+            print(f"Login error: {str(e)}")
+            raise ValueError("Invalid credentials")
     async def _get_user_by_email(self, email: str) -> User:
         """Retrieve a user by email address"""
         result = await self.session.execute(

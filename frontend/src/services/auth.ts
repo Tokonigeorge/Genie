@@ -9,7 +9,26 @@ import { api } from './api';
 //   has_existing_org: boolean;
 //   domain: string;
 // }
-
+//todo: create interfaces with the types of user, organization, membership, and onboarding status
+interface LoginResponse {
+  user: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  };
+  organization: {
+    id: string;
+    name: string;
+    domain: string;
+  } | null;
+  membership: {
+    status: 'invited' | 'active' | null;
+    role: 'member' | 'admin' | null;
+  } | null;
+  needs_onboarding: boolean;
+}
 interface SignupResponse {
   id: string;
   email: string;
@@ -55,6 +74,23 @@ export const authApi = {
       return response.data;
     } catch (error: any) {
       const detail = error.response?.data?.detail || 'Registration failed';
+      throw new Error(detail);
+    }
+  },
+  login: async (
+    email: string,
+    supabase_user_id: string
+  ): Promise<LoginResponse> => {
+    try {
+      console.log('Sending login data:', email, supabase_user_id);
+      const response = await api.post<LoginResponse>('/auth/login', {
+        email,
+        supabase_user_id,
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Auth API login error:', error);
+      const detail = error.response?.data?.detail || 'Login failed';
       throw new Error(detail);
     }
   },

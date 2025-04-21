@@ -11,7 +11,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    supabase_user_id: str
 class UserBase(BaseModel):
     id: UUID
     email: str

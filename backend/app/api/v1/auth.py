@@ -79,13 +79,19 @@ async def login(
     try:
         auth_service = AuthService(db)
         result = await auth_service.login_user(login_data)
-        return {
-            "user": result["user"],
-            "organization_status": result["organization_status"],
-            "session": result["session"]
-        }
+        return result
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        print(f"Login error details: {str(e)}")  # Add detailed logging
+        raise HTTPException(
+            status_code=401,
+            detail=str(e) if str(e) else "Authentication failed"
+        )
+    except Exception as e:
+        print(f"Unexpected login error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error during login"
+        )
     
 @router.post("/forgot-password")
 async def forgot_password(
