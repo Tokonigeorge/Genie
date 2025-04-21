@@ -27,13 +27,17 @@ async def verify_token(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
     try:
-        # Verify the JWT token with Supabase
-        user = await supabase_client.auth.get_user(credentials.credentials)
-        return user
+
+        response = supabase_client.auth.get_user(credentials.credentials)
+    
+        if not response.user:
+            raise ValueError("No user found in token")
+        return response.user
     except Exception as e:
+        print(f"Token verification error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -42,6 +46,7 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     try:
+                # The user.id from Supabase token should match our User.id
         result = await db.execute(
             select(User).where(User.id == user.id)
         )

@@ -2,22 +2,27 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from sqlalchemy.future import select
-from app.schemas.auth import UserCreate, UserLogin, OrganizationCreate, UserUpdate
+from app.schemas.auth import UserCreate, UserLogin, OrganizationCreate, UserUpdate, UserResponse
 from app.models import User, Organization, OrganizationMember, MemberRole, MemberStatus
 from app.core.supabase import supabase_client
+from sqlalchemy.orm import selectinload 
 
 class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def register_user(self, user_data: UserCreate):
+        existing_user = await self._get_user_by_email(user_data.email)
+        if existing_user:
+            raise ValueError("User with this email already exists")
         # 1. Check if email domain exists in any organization
         domain = user_data.email.split('@')[1]
         existing_org = await self._get_organization_by_domain(domain)
 
         # # 2. Create Supabase auth user
         # supabase_user = await self._create_supabase_user(user_data)
-
+        if not user_data.supabase_user_id:
+             raise ValueError("Supabase user ID is required for registration.")
         # 3. Create user in our database
         db_user = User(
             id=user_data.supabase_user_id,  # Use Supabase user ID
@@ -37,11 +42,16 @@ class AuthService:
             self.session.add(member)
 
         await self.session.commit()
+        # await self.session.refresh(db_user) # Refresh to load relationships if needed later
         return {
-        "user": db_user,
+        "id": db_user.id,
+        "email": db_user.email,
+        "full_name": db_user.full_name,
         "has_existing_org": bool(existing_org),
-        "domain": domain
+        "domain": domain,
+        "organization_status": member.status if existing_org else None # Send status back
         }
+    
 
     async def login_user(self, login_data: UserLogin):
         # 1. Authenticate with Supabase
@@ -86,11 +96,6 @@ class AuthService:
     #     )
     #     return result.scalar_one_or_none()
 
-    async def _get_organization_by_domain(self, domain: str):
-        result = await self.session.execute(
-            select(Organization).where(Organization.domain == domain)
-        )
-        return result.scalar_one_or_none()
 
     # async def _create_supabase_user(self, user_data: UserCreate):
     #     try:
@@ -154,6 +159,35 @@ class AuthService:
 
         except Exception as e:
             raise ValueError(f"Email verification failed: {str(e)}")
+        
+    async def get_onboarding_status(self, user_id: UUID):
+        """Get user details and their organization membership status."""
+        # Fetch user and their first membership with the organization loaded
+        result = await self.session.execute(
+            select(User)
+            .options(selectinload(User.organization_memberships).selectinload(OrganizationMember.organization))
+            .where(User.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise ValueError("User not found")
+
+        membership = user.organization_memberships[0] if user.organization_memberships else None
+        organization = membership.organization if membership else None
+
+        return {
+            "user_id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "membership_status": membership.status if membership else None,
+            "membership_role": membership.role if membership else None,
+            "organization_id": organization.id if organization else None,
+            "organization_name": organization.name if organization else None,
+            "organization_domain": organization.domain if organization else None,
+        }
         
     async def _get_user_membership(self, user_id: UUID) -> OrganizationMember:
         result = await self.session.execute(

@@ -36,21 +36,32 @@ const Signup: React.FC<SignupProps> = () => {
         email,
         password
       );
-      if (supabaseError) throw supabaseError;
-      // Register with our backend
-      const response = await authApi.signup(email, null, supabaseData.user.id);
 
-      if (response.has_existing_org) {
-        setDomainInfo({ domain: response.domain });
-        setShowDomainCheck(true);
-      } else {
-        // No existing org, redirect to email verification
-        navigate('/email-sent', { state: { email } });
+      if (!supabaseData?.user || supabaseError) {
+        throw new Error('An error occured, please try again.');
       }
+      // Register with our backend
+      await authApi.signup(email, null, supabaseData.user.id);
+
+      // Navigate to email verification page with domain info
+      navigate('/email-sent', {
+        state: {
+          email,
+        },
+      });
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'An unknown error occurred'
-      );
+      if (
+        error instanceof Error &&
+        error.message.includes('User with this email already exists')
+      ) {
+        setError('An account with this email already exists.');
+      } else {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred during signup.'
+        );
+      }
     } finally {
       setLoading(false);
     }

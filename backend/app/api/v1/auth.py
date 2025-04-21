@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, R
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, get_current_user
 from app.services.auth import AuthService
-from app.schemas.auth import UserCreate, UserLogin, UserResponse, ForgotPasswordRequest, ResetPasswordRequest, UserUpdate, OrganizationCreate
+from app.schemas.auth import UserCreate, UserLogin, UserResponse, ForgotPasswordRequest, ResetPasswordRequest, UserUpdate, OrganizationCreate, OnboardingStatusResponse
 from app.models import User
 from app.services.storage import StorageService
 
@@ -17,23 +17,59 @@ async def register(
 ):
     try:
         auth_service = AuthService(db)
-        user = await auth_service.register_user(user_data)
-        return user
+        # The service method now returns the correct structure
+        registered_info = await auth_service.register_user(user_data)
+        return registered_info
     except ValueError as e:
+        # Handle specific errors like "already exists"
+        if "already exists" in str(e):
+             raise HTTPException(status_code=409, detail=str(e)) # 409 Conflict
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e: # Catch unexpected errors
+        print(f"Unexpected registration error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during registration.")
     
-@router.patch("/users/me", response_model=UserResponse)
+# @router.patch("/users/me", response_model=UserResponse)
+# async def update_user(
+#     user_data: UserUpdate,
+#     db: AsyncSession = Depends(get_db),
+#     current_user: User = Depends(get_current_user)
+# ):
+#     try:
+#         auth_service = AuthService(db)
+#         updated_user = await auth_service.update_user(current_user.id, user_data)
+#         return updated_user
+#     except ValueError as e:
+#         raise HTTPException(status_code=400, detail=str(e))
+
+@router.patch("/users/me", response_model=UserResponse) # Or a more specific UserDetailResponse
 async def update_user(
-    user_data: UserUpdate,
+    user_data: UserUpdate, # Use the UserUpdate schema
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     try:
         auth_service = AuthService(db)
+        # Pass the Pydantic model directly
         updated_user = await auth_service.update_user(current_user.id, user_data)
-        return updated_user
+        # Map the updated User model back to a response schema if necessary
+        # This might require fetching the latest org status again or having update_user return it
+        # For simplicity now, just return basic user info - adjust as needed
+        return UserResponse(
+             id=updated_user.id,
+             email=updated_user.email,
+             full_name=updated_user.full_name,
+             has_existing_org= bool(await auth_service._get_user_membership(updated_user.id)), # Re-check org status
+             domain=updated_user.email.split('@')[1],
+             organization_status=(await auth_service._get_user_membership(updated_user.id)).status if await auth_service._get_user_membership(updated_user.id) else None
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Unexpected user update error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during user update.")
+    
+
 
 @router.post("/login")
 async def login(
@@ -120,3 +156,18 @@ async def create_organization(
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.get("/onboarding-status", response_model=OnboardingStatusResponse)
+async def get_onboarding_status(
+    current_user: User = Depends(get_current_user), # Protected route
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        auth_service = AuthService(db)
+        status = await auth_service.get_onboarding_status(current_user.id)
+        return status
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) # 404 if user not found by service
+    except Exception as e: # Catch unexpected errors
+        print(f"Unexpected onboarding status error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error fetching onboarding status.")

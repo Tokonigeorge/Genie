@@ -20,21 +20,33 @@ api.interceptors.request.use(async (config) => {
 });
 
 // Add response interceptor to handle token expiration
+// api.interceptors.response.use(
+//   (response) => response,
+//   async (error) => {
+//     if (error.response?.status === 401) {
+//       // Refresh token if possible
+//       const {
+//         data: { session },
+//       } = await supabase.auth.refreshSession();
+//       if (session) {
+//         // Retry the original request
+//         const originalRequest = error.config;
+//         originalRequest.headers.Authorization = `Bearer ${session.access_token}`;
+//         return api(originalRequest);
+//       }
+//       // If no session, redirect to login
+//       window.location.href = '/login';
+//     }
+//     return Promise.reject(error);
+//   }
+// );
+
+// Add response interceptor to handle 401s
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Refresh token if possible
-      const {
-        data: { session },
-      } = await supabase.auth.refreshSession();
-      if (session) {
-        // Retry the original request
-        const originalRequest = error.config;
-        originalRequest.headers.Authorization = `Bearer ${session.access_token}`;
-        return api(originalRequest);
-      }
-      // If no session, redirect to login
+      // Redirect to login on auth errors
       window.location.href = '/login';
     }
     return Promise.reject(error);
