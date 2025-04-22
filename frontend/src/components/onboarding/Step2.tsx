@@ -4,12 +4,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { step2Schema } from '../../utils/onboardingValidation';
 
+type FormData = z.infer<typeof step2Schema>;
 interface Step2Props {
-  onNext: () => void;
+  onNext: (data: FormData) => void;
   onPrevious: () => void;
 }
-
-type FormData = z.infer<typeof step2Schema>;
 
 const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -32,12 +31,13 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
         setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+      //todo: upload image to supabase and get the url
     }
   };
 
   const onSubmit = (data: FormData) => {
     console.log(data);
-    onNext();
+    onNext(data);
   };
 
   return (

@@ -29,6 +29,7 @@ export const step2Schema = z.object({
     .string()
     .min(1, 'Company name is required')
     .max(100, 'Company name must be less than 100 characters'),
+
   workspaceUrl: z
     .string()
     .min(1, 'Workspace URL is required')

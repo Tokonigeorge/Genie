@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { step1Schema } from '../../utils/onboardingValidation';
 interface Step1Props {
-  onNext: () => void;
+  onNext: (data: z.infer<typeof step1Schema>) => void;
 }
 type FormData = z.infer<typeof step1Schema>;
 
@@ -27,7 +27,7 @@ const Step1: React.FC<Step1Props> = ({ onNext }) => {
 
   const onSubmit = (data: FormData) => {
     console.log(data);
-    onNext();
+    onNext(data);
   };
 
   return (

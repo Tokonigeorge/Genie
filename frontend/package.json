@@ -17,6 +17,7 @@
     "@tailwindcss/postcss": "^4.0.17",
     "@tailwindcss/vite": "^4.0.17",
     "autoprefixer": "^10.4.21",
+    "axios": "^1.8.4",
     "heroicons": "^2.2.0",
     "lucide-react": "^0.487.0",
     "postcss": "^8.5.3",

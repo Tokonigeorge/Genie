@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import Footer from '../../components/layouts/Footer';
 import Logo from '../../components/commons/Logo';
-
+import { authApi } from '../../services/auth';
+import AccessRequest from '../../components/onboarding/AccessRequest';
+import DomainCheckDialog from '../../components/onboarding/DomainCheckDialog';
 interface SignupProps {
   isFirstTimeUser: boolean;
   setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
@@ -14,6 +16,13 @@ const Signup: React.FC<SignupProps> = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showDomainCheck, setShowDomainCheck] = useState(false);
+  const [showAccessRequest, setShowAccessRequest] = useState(false);
+  const [domainInfo, setDomainInfo] = useState<{
+    domain: string;
+    orgId?: string;
+  } | null>(null);
+
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -23,13 +32,36 @@ const Signup: React.FC<SignupProps> = () => {
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
-      if (error) throw error;
-      navigate('/email-sent', { state: { email } });
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'An unknown error occurred'
+      const { data: supabaseData, error: supabaseError } = await signUp(
+        email,
+        password
       );
+
+      if (!supabaseData?.user || supabaseError) {
+        throw new Error('An error occured, please try again.');
+      }
+      // Register with our backend
+      await authApi.signup(email, null, supabaseData.user.id);
+
+      // Navigate to email verification page with domain info
+      navigate('/email-sent', {
+        state: {
+          email,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('User with this email already exists')
+      ) {
+        setError('An account with this email already exists.');
+      } else {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred during signup.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -41,8 +73,37 @@ const Signup: React.FC<SignupProps> = () => {
     if (error) setError(error.message);
   };
 
+  const handleRequestAccess = async () => {
+    if (!domainInfo) return;
+    try {
+      await authApi.requestAccess(domainInfo.orgId!);
+      setShowDomainCheck(false);
+      setShowAccessRequest(true);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An unknown error occurred'
+      );
+    }
+  };
+
+  const handleCreateNew = () => {
+    setShowDomainCheck(false);
+    navigate('/onboarding');
+  };
+
   return (
     <div className='flex min-h-screen bg-[#F9F9F9]'>
+      {showDomainCheck && domainInfo && (
+        <DomainCheckDialog
+          domain={domainInfo.domain}
+          onRequestAccess={handleRequestAccess}
+          onCreateNew={handleCreateNew}
+        />
+      )}
+
+      {showAccessRequest && domainInfo && (
+        <AccessRequest domain={domainInfo.domain} />
+      )}
       {/* Left side with form */}
       <div className='w-full md:w-1/2 flex flex-col p-10'>
         {/* Logo at the top */}
@@ -65,7 +126,7 @@ const Signup: React.FC<SignupProps> = () => {
             {/* Form */}
             <form onSubmit={handleSubmit}>
               {error && <div className='text-red-500 mb-4'>{error}</div>}
-              <div className='mb-6'>
+              <div className='mb-6 flex flex-col gap-4'>
                 <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
                   <label
                     htmlFor='email'

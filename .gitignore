@@ -36,3 +36,5 @@ dist-ssr
 
 alembic.ini
 alembic/versions/*
+
+project.md
