@@ -2,6 +2,7 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from .database import AsyncSessionLocal
@@ -17,9 +18,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
             await session.commit()
-        except:
+        except SQLAlchemyError as e:
             await session.rollback()
             raise
+        except Exception as e:
+            await session.rollback()
         finally:
             await session.close()
 

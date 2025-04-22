@@ -25,6 +25,12 @@ async def register(
         if "already exists" in str(e):
              raise HTTPException(status_code=409, detail=str(e)) # 409 Conflict
         raise HTTPException(status_code=400, detail=str(e))
+    except SQLAlchemyError as e:
+        print(f"Database error during registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred. Please try again."
+        )
     except Exception as e: # Catch unexpected errors
         print(f"Unexpected registration error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during registration.")

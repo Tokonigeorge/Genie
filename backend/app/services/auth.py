@@ -6,51 +6,61 @@ from app.schemas.auth import UserCreate, UserLogin, OrganizationCreate, UserUpda
 from app.models import User, Organization, OrganizationMember, MemberRole, MemberStatus
 from app.core.supabase import supabase_client
 from sqlalchemy.orm import selectinload 
+from sqlalchemy.exc import SQLAlchemyError
 
 class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def register_user(self, user_data: UserCreate):
-        existing_user = await self._get_user_by_email(user_data.email)
-        if existing_user:
-            raise ValueError("User with this email already exists")
-        # 1. Check if email domain exists in any organization
-        domain = user_data.email.split('@')[1]
-        existing_org = await self._get_organization_by_domain(domain)
+        try:
+            existing_user = await self._get_user_by_email(user_data.email)
+            if existing_user:
+                raise ValueError("User with this email already exists")
+            # 1. Check if email domain exists in any organization
+            domain = user_data.email.split('@')[1]
+            existing_org = await self._get_organization_by_domain(domain)
 
-        # # 2. Create Supabase auth user
-        # supabase_user = await self._create_supabase_user(user_data)
-        if not user_data.supabase_user_id:
-             raise ValueError("Supabase user ID is required for registration.")
-        # 3. Create user in our database
-        db_user = User(
-            id=user_data.supabase_user_id,  # Use Supabase user ID
-            email=user_data.email,
-            full_name=user_data.full_name
-        )
-        self.session.add(db_user)
-        await self.session.flush()
-
-        if existing_org:
-            member = OrganizationMember(
-            user_id=db_user.id,
-            organization_id=existing_org.id,
-            role=MemberRole.member,
-            status=MemberStatus.invited
+            # # 2. Create Supabase auth user
+            # supabase_user = await self._create_supabase_user(user_data)
+            if not user_data.supabase_user_id:
+                raise ValueError("Supabase user ID is required for registration.")
+            # 3. Create user in our database
+            db_user = User(
+                id=user_data.supabase_user_id,  # Use Supabase user ID
+                email=user_data.email,
+                full_name=user_data.full_name
             )
-            self.session.add(member)
+            self.session.add(db_user)
+            await self.session.flush()
 
-        await self.session.commit()
-        # await self.session.refresh(db_user) # Refresh to load relationships if needed later
-        return {
-        "id": db_user.id,
-        "email": db_user.email,
-        "full_name": db_user.full_name,
-        "has_existing_org": bool(existing_org),
-        "domain": domain,
-        "organization_status": member.status if existing_org else None # Send status back
-        }
+            if existing_org:
+                member = OrganizationMember(
+                user_id=db_user.id,
+                organization_id=existing_org.id,
+                role=MemberRole.member,
+                status=MemberStatus.invited
+                )
+                self.session.add(member)
+
+            await self.session.commit()
+            # await self.session.refresh(db_user) # Refresh to load relationships if needed later
+            return {
+            "id": db_user.id,
+            "email": db_user.email,
+            "full_name": db_user.full_name,
+            "has_existing_org": bool(existing_org),
+            "domain": domain,
+            "organization_status": member.status if existing_org else None # Send status back
+            }
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            print(f"Database error in register_user: {e}")
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            print(f"Unexpected error in register_user: {e}")
+            raise
     
 
     async def login_user(self, login_data: UserLogin):

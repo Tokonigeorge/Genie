@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import auth
-
+from app.api import health
 
 app = FastAPI()
 
@@ -17,7 +17,7 @@ app.add_middleware(
     max_age=600,  # Cache preflight requests for 10 minutes
 )
 
-app
+app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 
 @app.get("/")

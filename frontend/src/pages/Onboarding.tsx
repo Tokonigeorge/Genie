@@ -100,7 +100,7 @@ const Onboarding: React.FC = () => {
         setOnboardingState('error');
       }
     };
-
+    console.log('Fetching status', authLoading, session);
     fetchStatus();
 
     return () => {
