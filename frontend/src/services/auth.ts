@@ -1,4 +1,6 @@
 import { api } from './api';
+import { supabase } from '../lib/supabase';
+import { redirect } from 'react-router-dom';
 
 // interface SignupResponse {
 //   user: {
@@ -9,6 +11,29 @@ import { api } from './api';
 //   has_existing_org: boolean;
 //   domain: string;
 // }
+
+// Utility to check if a valid session exists
+export async function checkAuth(): Promise<boolean> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return !!session; // Return true if session exists, false otherwise
+}
+
+// You might also want a function to get user data if needed for the loader
+export async function requireAuth() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    // Store intended destination before redirecting
+    const currentPath = window.location.pathname + window.location.search;
+    sessionStorage.setItem('redirectPath', currentPath);
+    throw redirect('/login'); // Use throw redirect here
+  }
+  return session.user; // Return user or session if needed
+}
 //todo: create interfaces with the types of user, organization, membership, and onboarding status
 interface LoginResponse {
   user: {

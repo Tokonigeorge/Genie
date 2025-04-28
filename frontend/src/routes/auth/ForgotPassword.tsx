@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import {
+  Form,
+  useActionData,
+  useNavigation,
+  redirect,
+  Link,
+} from 'react-router-dom';
+
+export async function action({ request }: { request: Request }) {
+  const formData = await request.formData();
+  const email = formData.get('email') as string;
+  // TODO: Add password reset logic here ( call Supabase)
+  // For now, just redirect to email-sent
+  return redirect(`/email-sent?email=${encodeURIComponent(email)}`);
+}
 
 const ForgotPassword: React.FC = () => {
+  const navigation = useNavigation();
+  const actionData = useActionData() as { error?: string };
   const [email, setEmail] = useState('');
-  const navigate = useNavigate();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate('/email-sent');
-  };
 
   return (
     <div className='flex min-h-screen'>
@@ -29,18 +39,15 @@ const ForgotPassword: React.FC = () => {
               </text>
             </svg>
           </div>
-
-          {/* Heading */}
           <h1 className='text-3xl font-bold mb-2'>Reset password</h1>
           <p className='text-gray-600 mb-8'>
             Enter your email to receive a reset link
           </p>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
+          <Form method='post'>
             <div className='mb-6'>
               <input
                 type='email'
+                name='email'
                 placeholder='Email address'
                 className='w-full p-3 border border-gray-300 rounded'
                 value={email}
@@ -48,16 +55,19 @@ const ForgotPassword: React.FC = () => {
                 required
               />
             </div>
-
             <button
               type='submit'
               className='w-full bg-black text-white p-3 rounded font-medium hover:bg-gray-800'
+              disabled={navigation.state === 'submitting'}
             >
-              Send Reset Link
+              {navigation.state === 'submitting'
+                ? 'Sending...'
+                : 'Send Reset Link'}
             </button>
-          </form>
-
-          {/* Back to login */}
+          </Form>
+          {actionData?.error && (
+            <div className='text-red-500 mt-2'>{actionData.error}</div>
+          )}
           <p className='text-center mt-4 text-sm'>
             <Link to='/login' className='text-blue-600 hover:underline'>
               Back to Login

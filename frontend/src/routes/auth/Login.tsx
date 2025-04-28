@@ -1,47 +1,44 @@
+import { redirect, useSubmit } from 'react-router-dom';
+import { authApi } from '../../services/auth';
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Form, useActionData, useNavigation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import Footer from '../../components/layouts/Footer';
 import Logo from '../../components/commons/Logo';
-import { authApi } from '../../services/auth';
 
-interface LoginProps {
-  isFirstTimeUser: boolean;
-  setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
+// Action to handle login form submission
+export async function action({ request }: { request: Request }) {
+  const formData = await request.formData();
+  const email = formData.get('email') as string;
+  const userId = formData.get('userId') as string;
+
+  try {
+    const backendResponse = await authApi.login(email, userId);
+
+    // Redirect based on onboarding status
+    if (backendResponse.needs_onboarding) {
+      return redirect('/onboarding');
+    } else {
+      return redirect('/');
+    }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Login failed' };
+  }
 }
 
-const Login: React.FC<LoginProps> = () => {
+const Login: React.FC = () => {
+  const actionData = useActionData() as { error?: string };
+  const navigation = useNavigation();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const { signIn, signInWithGoogle } = useAuth();
-  const navigate = useNavigate();
 
-  const handleLoginSuccess = (loginData: any) => {
-    if (loginData.needs_onboarding) {
-      navigate('/onboarding');
-    } else {
-      navigate('/');
-    }
-  };
-  const processLogin = async (email: string, supabase_user_id: string) => {
-    try {
-      console.log('Processing login for:', email, supabase_user_id);
-      const backendResponse = await authApi.login(email, supabase_user_id);
-      handleLoginSuccess(backendResponse);
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to complete login'
-      );
-    }
-  };
+  const submit = useSubmit();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
-
-    if (email.trim() === '') return;
 
     try {
       const { data: supabaseData, error: supabaseError } = await signIn(
@@ -49,43 +46,29 @@ const Login: React.FC<LoginProps> = () => {
         password
       );
 
-      if (supabaseError || !supabaseData.user) {
-        throw new Error(supabaseError?.message || 'Authentication failed');
+      if (!supabaseData?.user || supabaseError) {
+        throw new Error('An error occured, please try again.');
       }
-      console.log(
-        'supabaseData',
-        supabaseData,
-        supabaseData.user.email,
-        supabaseData.user.id
-      );
-      await processLogin(supabaseData.user.email, supabaseData.user.id);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'An unknown error occurred'
-      );
-    } finally {
+      submit({ email, userId: supabaseData.user.id }, { method: 'post' });
+    } catch (err: any) {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setError(null);
     setLoading(true);
     try {
       const { data: supabaseData, error: supabaseError } =
         await signInWithGoogle();
-
       if (supabaseError || !supabaseData.user) {
         throw new Error(
           supabaseError?.message || 'Google authentication failed'
         );
       }
-
-      await processLogin(supabaseData.user.email, supabaseData.user.id);
+      // Process login with backend
+      await authApi.login(supabaseData.user.email, supabaseData.user.id);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'An unknown error occurred'
-      );
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -93,16 +76,12 @@ const Login: React.FC<LoginProps> = () => {
 
   return (
     <div className='flex min-h-screen bg-[#F9F9F9]'>
-      {/* Left side with form */}
       <div className='w-full md:w-1/2 flex flex-col p-10'>
-        {/* Logo at the top */}
         <div className='mb-8 flex justify-center'>
           <Logo />
         </div>
-
         <div className='flex-grow flex items-center justify-center'>
           <div className='w-full max-w-md'>
-            {/* Heading */}
             <h1 className='text-6xl font-medium mb-2 leading-tight text-center'>
               Great work,
               <br />
@@ -111,66 +90,66 @@ const Login: React.FC<LoginProps> = () => {
             <p className='text-secondary mb-8 text-center font-geist text-[#777777]'>
               AI for getting great work done in no time.
             </p>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit}>
-              {error && <div className='text-red-500 mb-4'>{error}</div>}
+            <Form method='post' onSubmit={handleSubmit}>
+              {actionData?.error && (
+                <div className='text-red-500 mb-4'>{actionData.error}</div>
+              )}
               <div className='mb-6 space-y-4'>
-                <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
+                <div className='group w-full border border-[#8080801F] rounded-2xl p-3'>
                   <label
                     htmlFor='email'
-                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF]'
+                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
                   >
                     Email address
                   </label>
                   <input
                     id='email'
+                    name='email'
                     type='email'
                     placeholder='Yourname@example.com'
-                    className='w-full text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
+                    className='w-full text-[#333333] text-sm font-geist border-none outline-none'
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
-                <div className='group w-full border border-[#8080801F] rounded-2xl p-3 focus-within:border-[#1F90FF] focus-within:shadow-[0_0_0_4px_#1F90FF40] transition-all'>
+                <div className='group w-full border border-[#8080801F] rounded-2xl p-3'>
                   <label
                     htmlFor='password'
-                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494] group-focus-within:text-[#1F90FF] peer-focus:text-[#1F90FF]'
+                    className='block text-label text-sm font-medium font-geist mb-1 text-[#949494]'
                   >
                     Password
                   </label>
                   <input
                     id='password'
+                    name='password'
                     type='password'
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder='Enter your password'
-                    className='w-full text-gray-800 text-sm font-geist border-none outline-none focus:outline-none'
+                    className='w-full text-gray-800 text-sm font-geist border-none outline-none'
                   />
                 </div>
               </div>
-
               <button
                 type='submit'
-                disabled={loading}
+                disabled={loading || navigation.state === 'submitting'}
                 className='w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-[#292929] text-white p-4 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading || navigation.state === 'submitting'
+                  ? 'Logging in...'
+                  : 'Login'}
               </button>
-            </form>
-
+            </Form>
             <p className='text-center text-[#140909] mt-6 text-base font-medium font-geist'>
               Don&apos;t have an account?{' '}
-              <Link
-                to='/signup'
+              <a
+                href='/signup'
                 className='text-[#1F90FF] font-medium font-geist hover:underline'
               >
                 Sign up
-              </Link>
+              </a>
             </p>
-
-            {/* Divider */}
             <div className='flex items-center my-6'>
               <div className='flex-grow border-t border-[#F5F5F5]'></div>
               <span className='px-4 text-[#777777] text-base font-medium font-geist'>
@@ -178,12 +157,11 @@ const Login: React.FC<LoginProps> = () => {
               </span>
               <div className='flex-grow border-t border-[#F5F5F5]'></div>
             </div>
-
-            {/* Google login */}
             <button
               disabled={loading}
               onClick={handleGoogleSignIn}
               className='w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-[#333333] text-base justify-center p-3 border border-[#8080801F] rounded-[90px] font-geist'
+              type='button'
             >
               <svg
                 width='18'
@@ -215,8 +193,6 @@ const Login: React.FC<LoginProps> = () => {
           </div>
         </div>
       </div>
-
-      {/* Right side with background */}
       <div className='hidden md:flex md:w-1/2 md:flex-col md:justify-between'>
         <div className='flex-grow my-4 mx-4 bg-[#F9F9F9] rounded-3xl flex items-end'>
           <div className='p-12  w-full'>
