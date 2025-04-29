@@ -5,7 +5,7 @@ import ForgotPassword, {
   action as forgotPasswordAction,
 } from './ForgotPassword';
 import EmailSent, { loader as emailSentLoader } from './EmailSent';
-
+import JoinTeam from './JoinTeam';
 export const authRoutes = [
   <Route
     key='signup'
@@ -26,4 +26,5 @@ export const authRoutes = [
     element={<EmailSent />}
     loader={emailSentLoader}
   />,
+  <Route key='join-team' path='join-team' element={<JoinTeam />} />,
 ];
