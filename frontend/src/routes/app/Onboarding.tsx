@@ -1,25 +1,25 @@
 import { redirect } from 'react-router-dom';
 import React, { useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router-dom';
-import Logo from '../components/commons/Logo';
-import Footer from '../components/layouts/Footer';
-import Step1 from '../components/onboarding/Step1';
-import Step2 from '../components/onboarding/Step2';
-import Step3Success from '../components/onboarding/Step3Success';
-import { authApi, OnboardingStatusResponse } from '../services/auth';
-import { step1Schema, step2Schema } from '../utils/onboardingValidation';
+import Logo from '../../components/commons/Logo';
+import Footer from '../../components/layouts/Footer';
+import Step1 from '../../components/onboarding/Step1';
+import Step2 from '../../components/onboarding/Step2';
+import Step3Success from '../../components/onboarding/Step3Success';
+import { authApi, OnboardingStatusResponse } from '../../services/auth';
+import { step1Schema, step2Schema } from '../../utils/onboardingValidation';
 import { z } from 'zod';
-import AccessRequest from '../components/onboarding/AccessRequest';
-import { PUBLIC_EMAIL_DOMAINS } from '../constants/emails';
+import AccessRequest from '../../components/onboarding/AccessRequest';
+import { PUBLIC_EMAIL_DOMAINS } from '../../constants/emails';
 
 // Loader to fetch onboarding status
 export async function loader() {
   try {
     const data = await authApi.getOnboardingStatus();
 
-    if (data.membership_status === 'active') {
-      return redirect('/');
-    }
+    // if (data.membership_status === 'active') {
+    //   return redirect('/');
+    // }
 
     return { statusData: data };
   } catch (error) {
