@@ -2,6 +2,15 @@ import React from 'react';
 import Footer from '../../components/layouts/Footer';
 import Logo from '../../components/commons/Logo';
 import MiniGenieIcon from '../../components/commons/MiniGenieIcon';
+
+// Dummy data for workspaces
+const workspaces = [
+  { id: 1, name: 'Mason', members: 6 },
+  { id: 2, name: 'Acme Corp', members: 12 },
+  { id: 3, name: 'Dream Team', members: 4 },
+  { id: 4, name: 'Rocket Labs', members: 9 },
+];
+
 const JoinTeam = () => {
   return (
     <div className='flex min-h-screen w-full flex-col p-10 bg-[#F9F9F9] font-geist'>
@@ -17,17 +26,28 @@ const JoinTeam = () => {
             Choose a workspace you&apos;ll like to join or create your own.
           </p>
         </div>
-        <div className='flex justify-between items-center w-full border p-6 border-[#EBEBEB]  rounded-3xl'>
-          <div className='flex items-center gap-2'>
-            <div className='bg-black w-10 h-10 rounded-lg'></div>
-            <div>
-              <p className='text-[#333333] font-medium text-sm'>Mason</p>
-              <p className='text-[#949494] font-medium text-xs'>6 Members</p>
+        <div className=' border-[#EBEBEB]  rounded-3xl w-full border '>
+          {workspaces.map((workspace) => (
+            <div
+              key={workspace.id}
+              className='flex justify-between items-center p-6 border-b border-[#EBEBEB] last:border-b-0'
+            >
+              <div className='flex items-center gap-2'>
+                <div className='bg-black w-10 h-10 rounded-lg'></div>
+                <div>
+                  <p className='text-[#333333] font-medium text-sm'>
+                    {workspace.name}
+                  </p>
+                  <p className='text-[#949494] font-medium text-xs'>
+                    {workspace.members} Members
+                  </p>
+                </div>
+              </div>
+              <button className='px-4 py-1.5 bg-[#292929] text-white rounded-3xl'>
+                Request to join
+              </button>
             </div>
-          </div>
-          <button className='px-4 py-1.5 bg-[#292929] text-white rounded-3xl'>
-            Request to join
-          </button>
+          ))}
         </div>
         <div className='flex justify-between items-center w-full bg-[#F0F0F0] p-6 rounded-3xl mt-3'>
           <div className='flex items-center gap-2'>
