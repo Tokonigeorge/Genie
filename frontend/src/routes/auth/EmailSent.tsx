@@ -15,18 +15,18 @@ const EmailSent: React.FC = () => {
   const { email } = useLoaderData() as { email?: string };
 
   return (
-    <div className='flex min-h-screen w-full flex-col p-10'>
-      <div className='mb-8 flex '>
+    <div className='flex min-h-screen w-full flex-col p-10 bg-[#F9F9F9]'>
+      <div className='mb-8 flex justify-center'>
         <Logo />
       </div>
       <div className='flex-grow flex items-center justify-center'>
-        <div className='w-full max-w-md text-center'>
-          <div className='mb-8 flex justify-center'>
-            <img
+        <div className='w-full max-w-xl text-center '>
+          <div className='mb-8 flex justify-center h-80 w-full bg-white rounded-3xl'>
+            {/* <img
               src={emailSentImage}
               alt='Email Sent'
               className='w-full md:w-4/5 lg:w-3/4 max-w-2xl'
-            />
+            /> */}
           </div>
           <h1 className='text-[40px] text-[#333333] font-medium mb-4'>
             You&apos;re almost in!
