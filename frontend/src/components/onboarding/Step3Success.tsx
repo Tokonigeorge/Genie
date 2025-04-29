@@ -6,20 +6,20 @@ interface Step3SuccessProps {
 
 const Step3Success: React.FC<Step3SuccessProps> = ({ onComplete }) => {
   return (
-    <div className='flex w-full gap-8'>
+    <div className='flex w-full gap-8 border border-[#EBEBEB] rounded-4xl p-10 bg-white'>
       {/* Left Column */}
       <div className='flex-1 space-y-6'>
+        <p className='text-sm font-medium text-[#949494]'>03&nbsp;/&nbsp;03</p>
         <div>
           <h1 className='text-4xl leading-12 font-medium text-[#333333]'>
-            Welcome aboard!
+            Welcome to Genie
           </h1>
           <p className='text-[#777777] text-sm leading-6'>
-            You're all set! Let's get some magic done, bring your brand to life
-            with generative AI.
+            Upload your assets, describe your style, and let the magic unfold.
           </p>
         </div>
 
-        <div className='bg-white rounded-3xl p-8 shadow-sm space-y-8 text-[#949494]'>
+        <div className='mt-10 space-y-8 text-[#949494]'>
           <div className='flex items-start gap-4'>
             <svg
               width='19'
@@ -73,13 +73,17 @@ const Step3Success: React.FC<Step3SuccessProps> = ({ onComplete }) => {
               Keep every creation consistent, effortless, and uniquely you.
             </p>
           </div>
-
-          <button
-            onClick={onComplete}
-            className='px-12 mt-10 text-sm cursor-pointer bg-[#292929] text-white py-2.5 rounded-[90px] font-semibold hover:bg-gray-800 font-geist shadow-button'
-          >
-            Let's Go
-          </button>
+          <div className='flex justify-between'>
+            <button className='px-12 mt-10 text-sm cursor-pointer bg-transparent border border-[#8080801F] text-[#292929] py-2.5 rounded-[90px] font-medium hover:bg-gray-100 font-geist'>
+              Back
+            </button>
+            <button
+              onClick={onComplete}
+              className='px-12 mt-10 text-sm cursor-pointer bg-[#292929] text-white py-2.5 rounded-[90px] font-medium hover:bg-gray-800 font-geist shadow-button'
+            >
+              Let's Go
+            </button>
+          </div>
         </div>
       </div>
 

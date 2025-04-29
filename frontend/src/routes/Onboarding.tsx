@@ -49,7 +49,7 @@ const Onboarding: React.FC = () => {
   };
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [onboardingState, setOnboardingState] =
-    useState<OnboardingState>('loading');
+    useState<OnboardingState>('success');
   const [error, setError] = useState<string | null>(loaderError || null);
 
   const navigate = useNavigate();
@@ -157,15 +157,15 @@ const Onboarding: React.FC = () => {
       case 'newUser':
         return (
           <div className='w-[70%] flex overflow-hidden border border-[#EBEBEB] rounded-4xl'>
-            <div className='w-1/2 p-10 bg-[#FCFCFC]'>
+            <div className='w-1/2 p-10 bg-white'>
               <div className='mb-6'>
                 <p className='text-sm font-medium text-[#949494]'>
-                  0{currentStep}&nbsp;/&nbsp;02
+                  0{currentStep}&nbsp;/&nbsp;03
                 </p>
                 <h1 className='text-2xl leading-8 font-medium mt-4 text-[#333333]'>
                   {currentStep === 1
-                    ? `Let's get to know you.`
-                    : `Let's make it official.`}
+                    ? `Let's get to know you`
+                    : `Let's make it official`}
                 </h1>
                 {error && <p className='text-red-500 mt-2'>{error}</p>}
               </div>
@@ -194,7 +194,7 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className='flex min-h-screen flex-col p-10 bg-[#F9F9F9]'>
+    <div className='flex min-h-screen flex-col p-10 bg-[#F9F9F9] font-geist'>
       <div className='mb-8'>
         <Logo />
       </div>

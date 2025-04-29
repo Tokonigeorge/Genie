@@ -31,7 +31,6 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
         setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
-      //todo: upload image to supabase and get the url
     }
   };
 
@@ -48,7 +47,7 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
-        <div className='flex items-center space-x-4 mb-6'>
+        <div className='flex items-stretch space-x-4 mb-6'>
           <div className='h-16 w-16 rounded-xl bg-[#F0F0F0] flex items-center justify-center overflow-hidden'>
             {previewUrl ? (
               <img
@@ -60,9 +59,9 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
               <div className='text-[#949494] text-xs'></div>
             )}
           </div>
-          <div className='space-y-2'>
+          <div className='space-y-4'>
             <p className='text-[#949494] text-sm leading-5'>Company Logo</p>
-            <label className='border border-[#8080801F] font-semibold rounded-4xl px-8 py-1.5 text-[#333333] text-sm leading-5 bg-white cursor-pointer hover:bg-gray-50'>
+            <label className='border border-[#F5F5F5] font-medium rounded-4xl px-6 py-1.5 text-[#333333] text-sm leading-5 bg-white cursor-pointer hover:bg-gray-50'>
               Upload
               <input
                 type='file'
@@ -91,7 +90,7 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
               id='companyName'
               type='text'
               placeholder='Example Company Inc'
-              className='w-full text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
+              className='w-full placeholder:text-[#CFCFCF] text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
               {...register('companyName')}
             />
           </div>
@@ -116,7 +115,7 @@ const Step2: React.FC<Step2Props> = ({ onNext, onPrevious }) => {
                 id='workspaceUrl'
                 type='text'
                 placeholder='exampleco'
-                className='flex-1 text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
+                className='flex-1 placeholder:text-[#CFCFCF] text-[#333333] text-sm font-geist border-none outline-none focus:outline-none'
                 {...register('workspaceUrl')}
               />
             </div>

@@ -11,9 +11,9 @@ export const step1Schema = z.object({
     .min(1, 'Last name is required')
     .max(50, 'Last name must be less than 50 characters')
     .regex(/^[a-zA-Z\s]*$/, 'Last name can only contain letters and spaces'),
-  termsAgreed: z.boolean().refine((val) => val === true, {
-    message: 'You must agree to the Terms and Conditions',
-  }),
+  // termsAgreed: z.boolean().refine((val) => val === true, {
+  //   message: 'You must agree to the Terms and Conditions',
+  // }),
 });
 
 export const step2Schema = z.object({
